@@ -5,14 +5,14 @@ import lombok.Data;
 
 @Entity
 @Data
-@Table(name = "users")
+@Table(name = "pf_users")
 public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    @Column(name = "userId")
+    @Column(name = "user_id")
     private String userId;
 
     @Column(name = "name")
@@ -24,7 +24,6 @@ public class User {
     @Column(name = "role")
     private String role;
 
-    // ✅ เพิ่ม password สำหรับระบบ login
-    @Column(name = "password")
+    @Column(name = "password_hash")
     private String password;
 }

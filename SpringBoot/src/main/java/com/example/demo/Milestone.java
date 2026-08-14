@@ -1,9 +1,11 @@
 package com.example.demo;
 
 import jakarta.persistence.*;
+import lombok.Data;
 
 @Entity
-@Table(name = "milestones")
+@Data
+@Table(name = "pf_milestones")
 public class Milestone {
 
     @Id
@@ -18,47 +20,6 @@ public class Milestone {
     private String status;
     private int progress;
 
-    public Milestone() {
-    }
-
-    // ✅ เพิ่ม Getters & Setters (จำเป็นสำหรับ Jackson serialization)
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getDueDate() {
-        return dueDate;
-    }
-
-    public void setDueDate(String dueDate) {
-        this.dueDate = dueDate;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public int getProgress() {
-        return progress;
-    }
-
-    public void setProgress(int progress) {
-        this.progress = progress;
-    }
+    @Column(name = "is_approved")
+    private Boolean isApproved;
 }

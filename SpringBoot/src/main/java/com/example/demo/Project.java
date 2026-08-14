@@ -1,9 +1,11 @@
 package com.example.demo;
 
 import jakarta.persistence.*;
+import lombok.Data;
 
 @Entity
-@Table(name = "projects")
+@Data
+@Table(name = "pf_projects")
 public class Project {
 
     @Id
@@ -11,16 +13,16 @@ public class Project {
     private int id;
 
     private String name;
+    private String description;
+    private String course;
+
+    @Column(name = "due_date")
+    private String dueDate;
+
+    private String status;
     private String student;
+    private int progress;
 
-    public Project() {}
-
-    public int getId() { return id; }
-    public void setId(int id) { this.id = id; }
-
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-
-    public String getStudent() { return student; }
-    public void setStudent(String student) { this.student = student; }
+    @Column(name = "attachment_url")
+    private String attachmentUrl;
 }

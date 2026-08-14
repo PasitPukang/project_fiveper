@@ -1,10 +1,11 @@
 package com.example.demo;
 
 import jakarta.persistence.*;
-import java.time.LocalDate;
+import lombok.Data;
 
 @Entity
-@Table(name = "feedback")
+@Data
+@Table(name = "pf_feedback")
 public class Feedback {
 
     @Id
@@ -16,25 +17,14 @@ public class Feedback {
     @Column(name = "instructor_name")
     private String instructorName;
 
-    private LocalDate date;   // ✅ เปลี่ยนจาก String → LocalDate
+    private String date;
 
     @Column(name = "project_name")
     private String projectName;
 
-    public Feedback() {}
+    @Column(name = "is_read")
+    private Boolean isRead;
 
-    public int getId() { return id; }
-    public void setId(int id) { this.id = id; }
-
-    public String getComment() { return comment; }
-    public void setComment(String comment) { this.comment = comment; }
-
-    public String getInstructorName() { return instructorName; }
-    public void setInstructorName(String instructorName) { this.instructorName = instructorName; }
-
-    public LocalDate getDate() { return date; }
-    public void setDate(LocalDate date) { this.date = date; }
-
-    public String getProjectName() { return projectName; }
-    public void setProjectName(String projectName) { this.projectName = projectName; }
+    @Column(name = "reply_comment")
+    private String replyComment;
 }
