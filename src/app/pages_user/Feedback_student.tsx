@@ -12,7 +12,7 @@ import {
 } from '../components/ui/select';
 import { MessageSquare, User, Calendar } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import React from 'react';
+
 
 // Backend: GET  /api/feedback → List<Feedback> { id, comment, instructorName, date, projectName }
 // Backend: POST /api/feedback → Feedback
@@ -119,13 +119,12 @@ export function Feedback_student() {
       {/* Header */}
       <div>
         <h1 className="text-3xl text-gray-900">ข้อเสนอแนะ</h1>
-        <p className="text-gray-600 mt-1">ดูและให้ข้อเสนอแนะโครงการ</p>
+        
       </div>
 
       <Tabs defaultValue="student" className="w-full">
         <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="student">มุมมองนักศึกษา</TabsTrigger>
-          <TabsTrigger value="instructor">มุมมองอาจารย์</TabsTrigger>
+          <TabsTrigger value="student">นักศึกษา</TabsTrigger>
         </TabsList>
 
         {/* Student View */}
