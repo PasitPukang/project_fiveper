@@ -1,6 +1,6 @@
 -- ========================================================
 -- Supabase Cloud Schema for project_fiveper (Student Progress Tracking)
--- Comprehensive SRS-Aligned Schema V2.1-FINAL
+-- Idempotent Schema V2.1-FINAL (Safe to run multiple times)
 -- Execute this SQL in Supabase SQL Editor (https://supabase.com/dashboard)
 -- ========================================================
 
@@ -99,7 +99,7 @@ CREATE TABLE IF NOT EXISTS pf_chart (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Enable RLS and Allow Public Access Policies (for Demo)
+-- Enable RLS
 ALTER TABLE pf_users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pf_projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pf_project_members ENABLE ROW LEVEL SECURITY;
@@ -109,36 +109,73 @@ ALTER TABLE pf_notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pf_audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pf_chart ENABLE ROW LEVEL SECURITY;
 
+-- Drop Policies if exist before creating (Idempotent Safe Policies)
+DROP POLICY IF EXISTS "Allow public read pf_users" ON pf_users;
+DROP POLICY IF EXISTS "Allow public insert pf_users" ON pf_users;
+DROP POLICY IF EXISTS "Allow public update pf_users" ON pf_users;
+DROP POLICY IF EXISTS "Allow public delete pf_users" ON pf_users;
+
 CREATE POLICY "Allow public read pf_users" ON pf_users FOR SELECT USING (true);
 CREATE POLICY "Allow public insert pf_users" ON pf_users FOR INSERT WITH CHECK (true);
 CREATE POLICY "Allow public update pf_users" ON pf_users FOR UPDATE USING (true);
 CREATE POLICY "Allow public delete pf_users" ON pf_users FOR DELETE USING (true);
+
+DROP POLICY IF EXISTS "Allow public read pf_projects" ON pf_projects;
+DROP POLICY IF EXISTS "Allow public insert pf_projects" ON pf_projects;
+DROP POLICY IF EXISTS "Allow public update pf_projects" ON pf_projects;
+DROP POLICY IF EXISTS "Allow public delete pf_projects" ON pf_projects;
 
 CREATE POLICY "Allow public read pf_projects" ON pf_projects FOR SELECT USING (true);
 CREATE POLICY "Allow public insert pf_projects" ON pf_projects FOR INSERT WITH CHECK (true);
 CREATE POLICY "Allow public update pf_projects" ON pf_projects FOR UPDATE USING (true);
 CREATE POLICY "Allow public delete pf_projects" ON pf_projects FOR DELETE USING (true);
 
+DROP POLICY IF EXISTS "Allow public read pf_project_members" ON pf_project_members;
+DROP POLICY IF EXISTS "Allow public insert pf_project_members" ON pf_project_members;
+DROP POLICY IF EXISTS "Allow public update pf_project_members" ON pf_project_members;
+DROP POLICY IF EXISTS "Allow public delete pf_project_members" ON pf_project_members;
+
 CREATE POLICY "Allow public read pf_project_members" ON pf_project_members FOR SELECT USING (true);
 CREATE POLICY "Allow public insert pf_project_members" ON pf_project_members FOR INSERT WITH CHECK (true);
 CREATE POLICY "Allow public update pf_project_members" ON pf_project_members FOR UPDATE USING (true);
 CREATE POLICY "Allow public delete pf_project_members" ON pf_project_members FOR DELETE USING (true);
+
+DROP POLICY IF EXISTS "Allow public read pf_milestones" ON pf_milestones;
+DROP POLICY IF EXISTS "Allow public insert pf_milestones" ON pf_milestones;
+DROP POLICY IF EXISTS "Allow public update pf_milestones" ON pf_milestones;
+DROP POLICY IF EXISTS "Allow public delete pf_milestones" ON pf_milestones;
 
 CREATE POLICY "Allow public read pf_milestones" ON pf_milestones FOR SELECT USING (true);
 CREATE POLICY "Allow public insert pf_milestones" ON pf_milestones FOR INSERT WITH CHECK (true);
 CREATE POLICY "Allow public update pf_milestones" ON pf_milestones FOR UPDATE USING (true);
 CREATE POLICY "Allow public delete pf_milestones" ON pf_milestones FOR DELETE USING (true);
 
+DROP POLICY IF EXISTS "Allow public read pf_feedback" ON pf_feedback;
+DROP POLICY IF EXISTS "Allow public insert pf_feedback" ON pf_feedback;
+DROP POLICY IF EXISTS "Allow public update pf_feedback" ON pf_feedback;
+DROP POLICY IF EXISTS "Allow public delete pf_feedback" ON pf_feedback;
+
 CREATE POLICY "Allow public read pf_feedback" ON pf_feedback FOR SELECT USING (true);
 CREATE POLICY "Allow public insert pf_feedback" ON pf_feedback FOR INSERT WITH CHECK (true);
 CREATE POLICY "Allow public update pf_feedback" ON pf_feedback FOR UPDATE USING (true);
 CREATE POLICY "Allow public delete pf_feedback" ON pf_feedback FOR DELETE USING (true);
 
+DROP POLICY IF EXISTS "Allow public read pf_notifications" ON pf_notifications;
+DROP POLICY IF EXISTS "Allow public insert pf_notifications" ON pf_notifications;
+
 CREATE POLICY "Allow public read pf_notifications" ON pf_notifications FOR SELECT USING (true);
 CREATE POLICY "Allow public insert pf_notifications" ON pf_notifications FOR INSERT WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Allow public read pf_audit_logs" ON pf_audit_logs;
+DROP POLICY IF EXISTS "Allow public insert pf_audit_logs" ON pf_audit_logs;
+
 CREATE POLICY "Allow public read pf_audit_logs" ON pf_audit_logs FOR SELECT USING (true);
 CREATE POLICY "Allow public insert pf_audit_logs" ON pf_audit_logs FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow public read pf_chart" ON pf_chart;
+DROP POLICY IF EXISTS "Allow public insert pf_chart" ON pf_chart;
+DROP POLICY IF EXISTS "Allow public update pf_chart" ON pf_chart;
+DROP POLICY IF EXISTS "Allow public delete pf_chart" ON pf_chart;
 
 CREATE POLICY "Allow public read pf_chart" ON pf_chart FOR SELECT USING (true);
 CREATE POLICY "Allow public insert pf_chart" ON pf_chart FOR INSERT WITH CHECK (true);
