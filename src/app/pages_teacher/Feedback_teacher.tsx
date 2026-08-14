@@ -27,6 +27,7 @@ interface ProjectItem {
   id: number;
   name: string;
   student?: string;
+  course?: string;
 }
 
 export function Feedback_teacher() {
@@ -36,6 +37,9 @@ export function Feedback_teacher() {
   const [feedbackText, setFeedbackText] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+
+  const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+  const teacherName = currentUser?.name || 'ดร.สมหญิง มีชัย';
 
   const loadData = async () => {
     setLoading(true);
@@ -70,7 +74,7 @@ export function Feedback_teacher() {
     setSubmitting(true);
     await feedbackService.addFeedback({
       comment: feedbackText,
-      instructorName: 'ดร.สมหญิง มีชัย (อาจารย์ประจำวิชา)',
+      instructorName: teacherName,
       date: new Date().toISOString().split('T')[0],
       projectName: selectedProjectData?.name ?? 'โครงการพัฒนาซอฟต์แวร์',
     });
@@ -85,13 +89,13 @@ export function Feedback_teacher() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl text-gray-900">ข้อเสนอแนะสำหรับนิสิต</h1>
-        <p className="text-gray-600 mt-1">บันทึกข้อเสนอแนะและติดตามคำแนะนำ</p>
+        <p className="text-gray-600 mt-1">อาจารย์ผู้ให้คำแนะนำ: {teacherName}</p>
       </div>
 
       <Tabs defaultValue="instructor" className="w-full">
         <TabsList className="grid w-full max-w-md grid-cols-2">
           <TabsTrigger value="instructor">ให้ข้อเสนอแนะใหม่</TabsTrigger>
-          <TabsTrigger value="student">ประวัติข้อเสนอแนะ</TabsTrigger>
+          <TabsTrigger value="student">ประวัติข้อเสนอแนะทั้งหมด</TabsTrigger>
         </TabsList>
 
         <TabsContent value="instructor" className="space-y-4 mt-6">
@@ -104,12 +108,12 @@ export function Feedback_teacher() {
                 <Label htmlFor="projectSelect">เลือกโครงการของนิสิต</Label>
                 <Select value={selectedProject} onValueChange={setSelectedProject}>
                   <SelectTrigger id="projectSelect">
-                    <SelectValue placeholder="เลือกโครงการ" />
+                    <SelectValue placeholder="เลือกโครงการที่ต้องการเสนอแนะ" />
                   </SelectTrigger>
                   <SelectContent>
                     {projects.map((project) => (
                       <SelectItem key={project.id} value={project.id.toString()}>
-                        {project.name} {project.student ? `- ${project.student}` : ''}
+                        {project.name} {project.student ? `(${project.student})` : ''} - {project.course || 'CS 101'}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -120,7 +124,7 @@ export function Feedback_teacher() {
                 <Label htmlFor="feedbackInput">ข้อเสนอแนะ</Label>
                 <Textarea
                   id="feedbackInput"
-                  placeholder="กรอกคำแนะนำ ข้อสังเกต หรือแนวทางปรับปรุง..."
+                  placeholder="กรอกคำแนะนำ ข้อสังเกต หรือแนวทางปรับปรุงให้กับนิสิต..."
                   value={feedbackText}
                   onChange={(e) => setFeedbackText(e.target.value)}
                   rows={6}
@@ -133,7 +137,7 @@ export function Feedback_teacher() {
                 disabled={submitting}
                 className="w-full bg-green-600 hover:bg-green-700 font-medium"
               >
-                {submitting ? 'กำลังส่ง...' : 'บันทึกข้อเสนอแนะ'}
+                {submitting ? 'กำลังบันทึก...' : 'บันทึกข้อเสนอแนะ'}
               </Button>
             </CardContent>
           </Card>
@@ -158,7 +162,7 @@ export function Feedback_teacher() {
                           <div className="flex items-start gap-3">
                             <MessageSquare className="w-5 h-5 text-green-600 mt-1" />
                             <div className="flex-1">
-                              <p className="text-sm text-gray-900 leading-relaxed">
+                              <p className="text-sm text-gray-900 leading-relaxed font-normal">
                                 {feedback.comment}
                               </p>
                             </div>
@@ -166,8 +170,8 @@ export function Feedback_teacher() {
                           <div className="flex items-center gap-4 text-sm text-gray-600 pl-8">
                             {feedback.instructorName && (
                               <div className="flex items-center gap-1">
-                                <User className="w-4 h-4" />
-                                <span>{feedback.instructorName}</span>
+                                <User className="w-4 h-4 text-green-700" />
+                                <span className="font-medium text-gray-800">{feedback.instructorName}</span>
                               </div>
                             )}
                             {feedback.date && (
@@ -180,7 +184,7 @@ export function Feedback_teacher() {
                           {feedback.projectName && (
                             <div className="pl-8">
                               <span className="text-xs bg-green-100 text-green-800 px-2.5 py-1 rounded-full font-medium">
-                                {feedback.projectName}
+                                โครงการ: {feedback.projectName}
                               </span>
                             </div>
                           )}

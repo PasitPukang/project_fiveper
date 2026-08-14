@@ -26,7 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from '../components/ui/table';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2, User } from 'lucide-react';
 import * as React from 'react';
 import { projectService } from '../services/api';
 
@@ -37,6 +37,7 @@ interface Project {
   course: string;
   dueDate: string;
   status: string;
+  student?: string;
 }
 
 export function Projects_teacher() {
@@ -51,6 +52,7 @@ export function Projects_teacher() {
     course: '',
     dueDate: '',
     status: '',
+    student: '',
   });
 
   const loadProjects = async () => {
@@ -66,7 +68,7 @@ export function Projects_teacher() {
 
   const handleAddProject = () => {
     setEditingProject(null);
-    setFormData({ name: '', description: '', course: '', dueDate: '', status: 'กำลังดำเนินการ' });
+    setFormData({ name: '', description: '', course: '', dueDate: '', status: 'กำลังดำเนินการ', student: 'สมชาย ใจดี' });
     setIsModalOpen(true);
   };
 
@@ -78,6 +80,7 @@ export function Projects_teacher() {
       course: project.course,
       dueDate: project.dueDate,
       status: project.status,
+      student: project.student || 'สมชาย ใจดี',
     });
     setIsModalOpen(true);
   };
@@ -125,7 +128,7 @@ export function Projects_teacher() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl text-gray-900">โครงการนิสิตในความดูแล</h1>
-          <p className="text-gray-600 mt-1">ติดตามและประเมินโครงการของนิสิต</p>
+          <p className="text-gray-600 mt-1">ติดตามและประเมินโครงการของนิสิตทั้งหมด</p>
         </div>
         <Button onClick={handleAddProject} className="bg-green-600 hover:bg-green-700">
           <Plus className="w-4 h-4 mr-2" />
@@ -142,6 +145,7 @@ export function Projects_teacher() {
               <TableHeader>
                 <TableRow>
                   <TableHead>ชื่อโครงการ</TableHead>
+                  <TableHead>นิสิตผู้รับผิดชอบ</TableHead>
                   <TableHead>รายวิชา</TableHead>
                   <TableHead>วันครบกำหนด</TableHead>
                   <TableHead>สถานะ</TableHead>
@@ -155,6 +159,12 @@ export function Projects_teacher() {
                       <div>
                         <p className="text-gray-900 font-medium">{project.name}</p>
                         <p className="text-xs text-gray-600">{project.description}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1.5 text-gray-800">
+                        <User className="w-4 h-4 text-purple-600" />
+                        <span className="font-medium">{project.student || 'สมชาย ใจดี'}</span>
                       </div>
                     </TableCell>
                     <TableCell>{project.course}</TableCell>
@@ -207,6 +217,15 @@ export function Projects_teacher() {
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="กรอกชื่อโครงการ"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="student">นิสิตผู้รับผิดชอบ</Label>
+              <Input
+                id="student"
+                value={formData.student}
+                onChange={(e) => setFormData({ ...formData, student: e.target.value })}
+                placeholder="กรอกชื่อนิสิต"
               />
             </div>
             <div className="space-y-2">

@@ -37,6 +37,7 @@ interface Project {
   course: string;
   dueDate: string;
   status: string;
+  student?: string;
 }
 
 export function Projects_student() {
@@ -50,19 +51,26 @@ export function Projects_student() {
     description: '',
     course: '',
     dueDate: '',
-    status: '',
+    status: 'กำลังดำเนินการ',
   });
+
+  const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+  const studentName = currentUser?.name || 'สมชาย ใจดี';
 
   const loadProjects = async () => {
     setLoading(true);
     const data = await projectService.getProjects();
-    setProjects(data);
+    // Filter projects for the logged-in student
+    const filtered = (data || []).filter(
+      (p: Project) => p.student === studentName || !p.student || p.student.includes(studentName.split(' ')[0])
+    );
+    setProjects(filtered);
     setLoading(false);
   };
 
   useEffect(() => {
     loadProjects();
-  }, []);
+  }, [studentName]);
 
   const handleAddProject = () => {
     setEditingProject(null);
@@ -95,10 +103,15 @@ export function Projects_student() {
     }
 
     setSaving(true);
+    const payload = {
+      ...formData,
+      student: studentName,
+    };
+
     if (editingProject) {
-      await projectService.updateProject(editingProject.id, formData);
+      await projectService.updateProject(editingProject.id, payload);
     } else {
-      await projectService.addProject(formData);
+      await projectService.addProject(payload);
     }
     setIsModalOpen(false);
     setSaving(false);
@@ -125,7 +138,7 @@ export function Projects_student() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl text-gray-900">โครงการของฉัน</h1>
-          <p className="text-gray-600 mt-1">จัดการโครงการที่ได้รับมอบหมาย</p>
+          <p className="text-gray-600 mt-1">นิสิต: {studentName}</p>
         </div>
         <Button onClick={handleAddProject} className="bg-green-600 hover:bg-green-700">
           <Plus className="w-4 h-4 mr-2" />
@@ -136,7 +149,7 @@ export function Projects_student() {
       <Card>
         <CardContent className="p-0">
           {projects.length === 0 ? (
-            <p className="text-gray-500 p-6">ไม่มีข้อมูลโครงการ</p>
+            <p className="text-gray-500 p-6 text-center">ไม่มีข้อมูลโครงการของคุณ</p>
           ) : (
             <Table>
               <TableHeader>

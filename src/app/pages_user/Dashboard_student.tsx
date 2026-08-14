@@ -16,12 +16,17 @@ interface Project {
   id: number;
   name: string;
   student?: string;
+  course?: string;
+  status?: string;
 }
 
 export function Dashboard_student() {
   const [chartData, setChartData] = useState<ChartItem[]>([]);
-  const [recentProjects, setRecentProjects] = useState<Project[]>([]);
+  const [studentProjects, setStudentProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+  const studentName = currentUser?.name || 'สมชาย ใจดี';
 
   useEffect(() => {
     const fetchData = async () => {
@@ -31,8 +36,34 @@ export function Dashboard_student() {
           projectService.getProjects(),
         ]);
 
-        setChartData(chartJson || []);
-        setRecentProjects((projectsJson || []).slice(0, 5));
+        // Filter projects for this specific student
+        const filteredProjects = (projectsJson || []).filter(
+          (p: Project) => p.student === studentName || !p.student || p.student.includes(studentName.split(' ')[0])
+        );
+
+        setStudentProjects(filteredProjects);
+
+        // Group student's projects by course for the chart
+        const courseMap: Record<string, { projects: number; completed: number }> = {};
+        filteredProjects.forEach((p: Project) => {
+          const course = p.course || 'CS 101';
+          if (!courseMap[course]) {
+            courseMap[course] = { projects: 0, completed: 0 };
+          }
+          courseMap[course].projects += 1;
+          if (p.status === 'เสร็จสิ้น') {
+            courseMap[course].completed += 1;
+          }
+        });
+
+        const customChart = Object.keys(courseMap).map((course, idx) => ({
+          id: idx + 1,
+          course,
+          projects: courseMap[course].projects,
+          completed: courseMap[course].completed,
+        }));
+
+        setChartData(customChart.length > 0 ? customChart : (chartJson || []));
       } catch (err) {
         console.error('Error fetching student dashboard data:', err);
       } finally {
@@ -41,17 +72,18 @@ export function Dashboard_student() {
     };
 
     fetchData();
-  }, []);
+  }, [studentName]);
 
-  const totalProjects = chartData.reduce((sum, item) => sum + (item.projects || 0), 0);
-  const totalCompleted = chartData.reduce((sum, item) => sum + (item.completed || 0), 0);
-  const inProgress = Math.max(0, totalProjects - totalCompleted);
+  const totalProjects = studentProjects.length;
+  const totalCompleted = studentProjects.filter((p) => p.status === 'เสร็จสิ้น').length;
+  const inProgress = studentProjects.filter((p) => p.status === 'กำลังดำเนินการ').length;
+  const uniqueCourses = new Set(studentProjects.map((p) => p.course)).size;
 
   const summaryData = [
-    { title: 'โครงการทั้งหมด', value: totalProjects || 4, icon: FolderKanban, color: 'bg-green-500' },
-    { title: 'กำลังดำเนินการ', value: inProgress || 2, icon: Clock, color: 'bg-yellow-500' },
-    { title: 'เสร็จสิ้น', value: totalCompleted || 2, icon: CheckCircle, color: 'bg-green-600' },
-    { title: 'จำนวนวิชา', value: chartData.length || 3, icon: AlertCircle, color: 'bg-red-500' },
+    { title: 'โครงการของฉัน', value: totalProjects || 1, icon: FolderKanban, color: 'bg-green-500' },
+    { title: 'กำลังดำเนินการ', value: inProgress || 1, icon: Clock, color: 'bg-yellow-500' },
+    { title: 'เสร็จสิ้น', value: totalCompleted || 0, icon: CheckCircle, color: 'bg-green-600' },
+    { title: 'จำนวนวิชาที่เรียน', value: uniqueCourses || 1, icon: AlertCircle, color: 'bg-red-500' },
   ];
 
   if (loading) return <p className="p-6 text-gray-500">กำลังโหลดข้อมูลแดชบอร์ด...</p>;
@@ -60,7 +92,7 @@ export function Dashboard_student() {
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl text-gray-900">แดชบอร์ดนิสิต</h1>
-        <p className="text-gray-600 mt-1">ยินดีต้อนรับ</p>
+        <p className="text-gray-600 mt-1">ยินดีต้อนรับคุณ {studentName}</p>
       </div>
 
       {/* Summary Cards */}
@@ -89,7 +121,7 @@ export function Dashboard_student() {
         {/* Progress Chart */}
         <Card>
           <CardHeader>
-            <CardTitle>ความก้าวหน้าโครงการแยกตามวิชา</CardTitle>
+            <CardTitle>ความก้าวหน้าโครงการของฉันแยกตามวิชา</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -108,19 +140,22 @@ export function Dashboard_student() {
         {/* Recent Projects */}
         <Card>
           <CardHeader>
-            <CardTitle>โครงการล่าสุด</CardTitle>
+            <CardTitle>โครงการของฉันล่าสุด</CardTitle>
           </CardHeader>
           <CardContent>
-            {recentProjects.length === 0 ? (
+            {studentProjects.length === 0 ? (
               <p className="text-gray-500 text-sm">ไม่มีข้อมูลโครงการ</p>
             ) : (
               <div className="space-y-4">
-                {recentProjects.map((project) => (
+                {studentProjects.slice(0, 5).map((project) => (
                   <div key={project.id} className="flex items-center justify-between py-2 border-b last:border-0">
                     <div>
                       <p className="text-sm font-medium text-gray-900">{project.name}</p>
-                      <p className="text-xs text-gray-600">{project.student || 'นิสิต'}</p>
+                      <p className="text-xs text-gray-600">รายวิชา: {project.course || 'CS 101'}</p>
                     </div>
+                    <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
+                      {project.status || 'กำลังดำเนินการ'}
+                    </span>
                   </div>
                 ))}
               </div>
