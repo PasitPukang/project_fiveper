@@ -27,11 +27,7 @@ import {
 } from '../components/ui/table';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import React from 'react';
-
-// Backend: GET    /users      → List<User> { id, userId, name, email, role }
-// Backend: POST   /users      → User
-// Backend: PUT    /users/{id} → User
-// Backend: DELETE /users/{id} → "User deleted"
+import { userService } from '../services/api';
 
 interface User {
   id: number;
@@ -40,8 +36,6 @@ interface User {
   email: string;
   role: string;
 }
-
-const API_URL = 'http://localhost:8080/users';
 
 export function UserManagement() {
   const [users, setUsers] = useState<User[]>([]);
@@ -52,25 +46,19 @@ export function UserManagement() {
     name: '',
     email: '',
     role: '',
-    password: '',  // ✅ เพิ่ม password field
+    password: '',
   });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const response = await fetch(API_URL);
-        if (!response.ok) throw new Error('Failed to fetch users');
-        const data: User[] = await response.json();
-        setUsers(data);
-      } catch (error) {
-        console.error('Error fetching users:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const loadUsers = async () => {
+    setLoading(true);
+    const data = await userService.getUsers();
+    setUsers(data);
+    setLoading(false);
+  };
 
-    fetchUsers();
+  useEffect(() => {
+    loadUsers();
   }, []);
 
   const handleAddUser = () => {
@@ -86,22 +74,15 @@ export function UserManagement() {
       name: user.name,
       email: user.email,
       role: user.role,
-      password: '',  // ไม่แสดง password เดิม ให้กรอกใหม่ถ้าต้องการเปลี่ยน
+      password: '',
     });
     setIsModalOpen(true);
   };
 
   const handleDeleteUser = async (id: number) => {
     if (!confirm('คุณแน่ใจหรือไม่ว่าต้องการลบผู้ใช้นี้?')) return;
-
-    try {
-      const response = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
-      if (!response.ok) throw new Error('Failed to delete user');
-      setUsers(users.filter((u) => u.id !== id));
-    } catch (error) {
-      console.error('Error deleting user:', error);
-      alert('เกิดข้อผิดพลาดในการลบผู้ใช้');
-    }
+    await userService.deleteUser(id);
+    await loadUsers();
   };
 
   const handleSaveUser = async () => {
@@ -114,41 +95,13 @@ export function UserManagement() {
       return;
     }
 
-    try {
-      if (editingUser) {
-        // UPDATE - ส่ง password เฉพาะเมื่อกรอกมา
-        const body: any = {
-          userId: formData.userId,
-          name: formData.name,
-          email: formData.email,
-          role: formData.role,
-        };
-        if (formData.password) body.password = formData.password;
-
-        const response = await fetch(`${API_URL}/${editingUser.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        });
-        if (!response.ok) throw new Error('Failed to update user');
-        const updatedUser: User = await response.json();
-        setUsers(users.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
-      } else {
-        // CREATE
-        const response = await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData),
-        });
-        if (!response.ok) throw new Error('Failed to add user');
-        const newUser: User = await response.json();
-        setUsers([...users, newUser]);
-      }
-      setIsModalOpen(false);
-    } catch (error) {
-      console.error('Error saving user:', error);
-      alert('เกิดข้อผิดพลาดในการบันทึกผู้ใช้');
+    if (editingUser) {
+      await userService.updateUser(editingUser.id, formData);
+    } else {
+      await userService.addUser(formData);
     }
+    setIsModalOpen(false);
+    await loadUsers();
   };
 
   const getRoleBadgeColor = (role: string) => {
@@ -164,7 +117,7 @@ export function UserManagement() {
     }
   };
 
-  if (loading) return <p>กำลังโหลดข้อมูล...</p>;
+  if (loading) return <p className="p-6 text-gray-500">กำลังโหลดข้อมูลผู้ใช้...</p>;
 
   return (
     <div className="space-y-6">
@@ -195,11 +148,11 @@ export function UserManagement() {
             </TableHeader>
             <TableBody>
               {users.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="text-center py-8 text-gray-500">
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8 text-gray-500">
                     ไม่มีข้อมูลผู้ใช้
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : (
                 users.map((user) => (
                   <TableRow key={user.id}>
@@ -280,7 +233,6 @@ export function UserManagement() {
                 </SelectContent>
               </Select>
             </div>
-            {/* ✅ เพิ่ม password field */}
             <div className="space-y-2">
               <Label htmlFor="password">
                 รหัสผ่าน {editingUser && <span className="text-gray-400 text-xs">(เว้นว่างไว้ถ้าไม่ต้องการเปลี่ยน)</span>}
