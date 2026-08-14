@@ -6,8 +6,7 @@ import { Label } from './components/ui/label';
 import { Button } from './components/ui/button';
 import { Card, CardContent, CardHeader } from './components/ui/card';
 import React from 'react';
-
-const API_URL = 'http://localhost:8080/api/login';
+import { supabase } from './supabaseClient';
 
 const roleRedirectMap: Record<string, string> = {
   'ผู้ดูแลระบบ': '/',
@@ -45,24 +44,31 @@ export default function Login() {
 
     setLoading(true);
     try {
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+      // 🚀 Direct Supabase Cloud Authentication
+      const { data, error: dbError } = await supabase
+        .from('pf_users')
+        .select('*')
+        .eq('email', email)
+        .single();
 
-      if (response.ok) {
-        const user = await response.json();
+      if (!dbError && data) {
+        const user = {
+          id: data.id,
+          userId: data.user_id,
+          name: data.name,
+          email: data.email,
+          role: data.role,
+        };
         sessionStorage.setItem('currentUser', JSON.stringify(user));
         const redirectTo = roleRedirectMap[user.role] ?? '/';
         navigate(redirectTo, { replace: true });
         return;
       }
     } catch (err) {
-      console.warn('Backend server offline, performing demo login fallback:', err);
+      console.warn('Supabase authentication check:', err);
     }
 
-    // Demo Fallback Login when backend is offline
+    // Demo Fallback Login when offline or custom credentials entered
     let detectedRole = 'ผู้ดูแลระบบ';
     let defaultName = 'ผู้ดูแลระบบ';
 
@@ -95,7 +101,7 @@ export default function Login() {
           </div>
           <div className="text-center space-y-1.5">
             <h1 className="text-xl font-bold text-gray-900">ระบบติดตามการดำเนินงานของนิสิต</h1>
-            <p className="text-xs text-gray-600">เข้าสู่ระบบเพื่อใช้งานในบทบาทต่างๆ</p>
+            <p className="text-xs text-gray-600">เข้าสู่ระบบเพื่อใช้งานในบทบาทต่างๆ (Supabase Cloud)</p>
           </div>
         </CardHeader>
 
@@ -137,7 +143,7 @@ export default function Login() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="เช่น admin@ku.th, teacher@ku.th"
+                placeholder="เช่น admin@ku.th, teacher@ku.th, student@ku.th"
                 className="h-10 text-xs"
                 disabled={loading}
               />

@@ -1,10 +1,9 @@
-// Central Hybrid API & Supabase Cloud Integration Service for project_fiveper
+// 🚀 Pure Supabase Cloud Integration Service for project_fiveper (Serverless Architecture)
+// Direct Real-time Cloud Connection with LocalStorage Offline Fallback
 
 import { supabase } from '../supabaseClient';
 
-const BASE_URL = 'http://localhost:8080/api/v1';
-
-// Default Seed Data
+// Default Seed Data Fallback
 const DEFAULT_USERS = [
   { id: 1, userId: 'ADM001', name: 'ผู้ดูแลระบบ', email: 'admin@ku.th', role: 'ผู้ดูแลระบบ' },
   { id: 2, userId: 'INS001', name: 'ดร.สมหญิง มีชัย', email: 'teacher@ku.th', role: 'อาจารย์' },
@@ -59,15 +58,12 @@ function setLocal<T>(key: string, value: T): void {
   } catch (e) {}
 }
 
-// --- API Services with Supabase Integration ---
+// ==========================================
+// 🚀 Supabase Cloud Services (100% Serverless)
+// ==========================================
 
 export const userService = {
   getUsers: async () => {
-    try {
-      const res = await fetch(`${BASE_URL}/users`);
-      if (res.ok) return await res.json();
-    } catch (e) {}
-
     try {
       const { data, error } = await supabase.from('pf_users').select('*').order('id', { ascending: true });
       if (!error && data && data.length > 0) {
@@ -81,36 +77,31 @@ export const userService = {
         setLocal('users', formatted);
         return formatted;
       }
-    } catch (e) {}
-
+    } catch (e) {
+      console.warn('Supabase query fallback to local:', e);
+    }
     return getLocal('users', DEFAULT_USERS);
   },
 
   addUser: async (user: any) => {
     try {
-      const res = await fetch(`${BASE_URL}/users`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(user),
-      });
-      if (res.ok) return await res.json();
-    } catch (e) {}
-
-    try {
       const { data, error } = await supabase.from('pf_users').insert([{
-        user_id: user.userId,
+        user_id: user.userId || `USR${Date.now().toString().slice(-4)}`,
         name: user.name,
         email: user.email,
         role: user.role,
-        password_hash: user.password
+        password_hash: user.password || 'password123'
       }]).select();
+
       if (!error && data && data.length > 0) {
         const newUser = { id: data[0].id, userId: data[0].user_id, name: data[0].name, email: data[0].email, role: data[0].role };
         const current = getLocal('users', DEFAULT_USERS);
         setLocal('users', [...current, newUser]);
         return newUser;
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Supabase insert fallback to local:', e);
+    }
 
     const current = getLocal('users', DEFAULT_USERS);
     const newUser = { ...user, id: Date.now() };
@@ -120,22 +111,15 @@ export const userService = {
 
   updateUser: async (id: number, user: any) => {
     try {
-      const res = await fetch(`${BASE_URL}/users/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(user),
-      });
-      if (res.ok) return await res.json();
-    } catch (e) {}
-
-    try {
       await supabase.from('pf_users').update({
         user_id: user.userId,
         name: user.name,
         email: user.email,
         role: user.role
       }).eq('id', id);
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Supabase update fallback to local:', e);
+    }
 
     const current = getLocal('users', DEFAULT_USERS);
     const updated = current.map((u: any) => (u.id === id ? { ...u, ...user } : u));
@@ -145,12 +129,10 @@ export const userService = {
 
   deleteUser: async (id: number) => {
     try {
-      await fetch(`${BASE_URL}/users/${id}`, { method: 'DELETE' });
-    } catch (e) {}
-
-    try {
       await supabase.from('pf_users').delete().eq('id', id);
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Supabase delete fallback to local:', e);
+    }
 
     const current = getLocal('users', DEFAULT_USERS);
     const updated = current.filter((u: any) => u.id !== id);
@@ -160,11 +142,6 @@ export const userService = {
 
 export const projectService = {
   getProjects: async () => {
-    try {
-      const res = await fetch(`${BASE_URL}/projects`);
-      if (res.ok) return await res.json();
-    } catch (e) {}
-
     try {
       const { data, error } = await supabase.from('pf_projects').select('*').order('id', { ascending: true });
       if (!error && data && data.length > 0) {
@@ -182,21 +159,13 @@ export const projectService = {
         setLocal('projects', formatted);
         return formatted;
       }
-    } catch (e) {}
-
+    } catch (e) {
+      console.warn('Supabase query fallback to local:', e);
+    }
     return getLocal('projects', DEFAULT_PROJECTS);
   },
 
   addProject: async (project: any) => {
-    try {
-      const res = await fetch(`${BASE_URL}/projects`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(project),
-      });
-      if (res.ok) return await res.json();
-    } catch (e) {}
-
     try {
       const { data, error } = await supabase.from('pf_projects').insert([{
         name: project.name,
@@ -208,6 +177,7 @@ export const projectService = {
         progress: project.progress || 0,
         attachment_url: project.attachmentUrl || null
       }]).select();
+
       if (!error && data && data.length > 0) {
         const newProj = {
           id: data[0].id,
@@ -224,7 +194,9 @@ export const projectService = {
         setLocal('projects', [...current, newProj]);
         return newProj;
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Supabase insert fallback to local:', e);
+    }
 
     const current = getLocal('projects', DEFAULT_PROJECTS);
     const newProject = { ...project, id: Date.now(), progress: project.progress || 0 };
@@ -233,15 +205,6 @@ export const projectService = {
   },
 
   updateProject: async (id: number, project: any) => {
-    try {
-      const res = await fetch(`${BASE_URL}/projects/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(project),
-      });
-      if (res.ok) return await res.json();
-    } catch (e) {}
-
     try {
       await supabase.from('pf_projects').update({
         name: project.name,
@@ -252,7 +215,9 @@ export const projectService = {
         student: project.student,
         progress: project.progress
       }).eq('id', id);
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Supabase update fallback to local:', e);
+    }
 
     const current = getLocal('projects', DEFAULT_PROJECTS);
     const updated = current.map((p: any) => (p.id === id ? { ...p, ...project } : p));
@@ -262,12 +227,10 @@ export const projectService = {
 
   deleteProject: async (id: number) => {
     try {
-      await fetch(`${BASE_URL}/projects/${id}`, { method: 'DELETE' });
-    } catch (e) {}
-
-    try {
       await supabase.from('pf_projects').delete().eq('id', id);
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Supabase delete fallback to local:', e);
+    }
 
     const current = getLocal('projects', DEFAULT_PROJECTS);
     const updated = current.filter((p: any) => p.id !== id);
@@ -277,11 +240,6 @@ export const projectService = {
 
 export const milestoneService = {
   getMilestones: async () => {
-    try {
-      const res = await fetch(`${BASE_URL}/milestones`);
-      if (res.ok) return await res.json();
-    } catch (e) {}
-
     try {
       const { data, error } = await supabase.from('pf_milestones').select('*').order('id', { ascending: true });
       if (!error && data && data.length > 0) {
@@ -296,21 +254,13 @@ export const milestoneService = {
         setLocal('milestones', formatted);
         return formatted;
       }
-    } catch (e) {}
-
+    } catch (e) {
+      console.warn('Supabase query fallback to local:', e);
+    }
     return getLocal('milestones', DEFAULT_MILESTONES);
   },
 
   addMilestone: async (milestone: any) => {
-    try {
-      const res = await fetch(`${BASE_URL}/milestones`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(milestone),
-      });
-      if (res.ok) return await res.json();
-    } catch (e) {}
-
     try {
       const { data, error } = await supabase.from('pf_milestones').insert([{
         name: milestone.name,
@@ -319,13 +269,16 @@ export const milestoneService = {
         progress: milestone.progress || 0,
         is_approved: false
       }]).select();
+
       if (!error && data && data.length > 0) {
         const newM = { id: data[0].id, name: data[0].name, dueDate: data[0].due_date, status: data[0].status, progress: data[0].progress, isApproved: false };
         const current = getLocal('milestones', DEFAULT_MILESTONES);
         setLocal('milestones', [...current, newM]);
         return newM;
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Supabase insert fallback to local:', e);
+    }
 
     const current = getLocal('milestones', DEFAULT_MILESTONES);
     const newMilestone = { ...milestone, id: Date.now(), isApproved: false };
@@ -335,15 +288,6 @@ export const milestoneService = {
 
   updateMilestone: async (id: number, milestone: any) => {
     try {
-      const res = await fetch(`${BASE_URL}/milestones/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(milestone),
-      });
-      if (res.ok) return await res.json();
-    } catch (e) {}
-
-    try {
       await supabase.from('pf_milestones').update({
         name: milestone.name,
         due_date: milestone.dueDate,
@@ -351,7 +295,9 @@ export const milestoneService = {
         progress: milestone.progress,
         is_approved: milestone.isApproved
       }).eq('id', id);
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Supabase update fallback to local:', e);
+    }
 
     const current = getLocal('milestones', DEFAULT_MILESTONES);
     const updated = current.map((m: any) => (m.id === id ? { ...m, ...milestone } : m));
@@ -362,11 +308,6 @@ export const milestoneService = {
 
 export const feedbackService = {
   getFeedback: async () => {
-    try {
-      const res = await fetch(`${BASE_URL}/feedback`);
-      if (res.ok) return await res.json();
-    } catch (e) {}
-
     try {
       const { data, error } = await supabase.from('pf_feedback').select('*').order('id', { ascending: false });
       if (!error && data && data.length > 0) {
@@ -382,21 +323,13 @@ export const feedbackService = {
         setLocal('feedback', formatted);
         return formatted;
       }
-    } catch (e) {}
-
+    } catch (e) {
+      console.warn('Supabase query fallback to local:', e);
+    }
     return getLocal('feedback', DEFAULT_FEEDBACK);
   },
 
   addFeedback: async (item: any) => {
-    try {
-      const res = await fetch(`${BASE_URL}/feedback`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(item),
-      });
-      if (res.ok) return await res.json();
-    } catch (e) {}
-
     try {
       const { data, error } = await supabase.from('pf_feedback').insert([{
         comment: item.comment,
@@ -406,13 +339,16 @@ export const feedbackService = {
         is_read: false,
         reply_comment: ''
       }]).select();
+
       if (!error && data && data.length > 0) {
         const newF = { id: data[0].id, comment: data[0].comment, instructorName: data[0].instructor_name, date: data[0].date, projectName: data[0].project_name, isRead: false, replyComment: '' };
         const current = getLocal('feedback', DEFAULT_FEEDBACK);
         setLocal('feedback', [newF, ...current]);
         return newF;
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Supabase insert fallback to local:', e);
+    }
 
     const current = getLocal('feedback', DEFAULT_FEEDBACK);
     const newItem = { ...item, id: Date.now(), isRead: false, replyComment: '' };
@@ -426,7 +362,9 @@ export const feedbackService = {
         reply_comment: replyText,
         is_read: true
       }).eq('id', id);
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Supabase reply fallback to local:', e);
+    }
 
     const current = getLocal('feedback', DEFAULT_FEEDBACK);
     const updated = current.map((f: any) => (f.id === id ? { ...f, replyComment: replyText, isRead: true } : f));
@@ -437,7 +375,9 @@ export const feedbackService = {
   markAsRead: async (id: number) => {
     try {
       await supabase.from('pf_feedback').update({ is_read: true }).eq('id', id);
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Supabase mark read fallback to local:', e);
+    }
 
     const current = getLocal('feedback', DEFAULT_FEEDBACK);
     const updated = current.map((f: any) => (f.id === id ? { ...f, isRead: true } : f));
@@ -453,14 +393,18 @@ export const notificationService = {
         setLocal('notifications', data);
         return data;
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Supabase notifications fallback to local:', e);
+    }
     return getLocal('notifications', DEFAULT_NOTIFICATIONS);
   },
 
   markAsRead: async (id: number) => {
     try {
       await supabase.from('pf_notifications').update({ is_read: true }).eq('id', id);
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Supabase notification mark read fallback to local:', e);
+    }
     const current = getLocal('notifications', DEFAULT_NOTIFICATIONS);
     const updated = current.map((n: any) => (n.id === id ? { ...n, isRead: true } : n));
     setLocal('notifications', updated);
@@ -470,18 +414,14 @@ export const notificationService = {
 export const chartService = {
   getChartData: async () => {
     try {
-      const res = await fetch(`${BASE_URL}/chart`);
-      if (res.ok) return await res.json();
-    } catch (e) {}
-
-    try {
       const { data, error } = await supabase.from('pf_chart').select('*').order('id', { ascending: true });
       if (!error && data && data.length > 0) {
         setLocal('chart', data);
         return data;
       }
-    } catch (e) {}
-
+    } catch (e) {
+      console.warn('Supabase chart fallback to local:', e);
+    }
     return getLocal('chart', DEFAULT_CHART);
   },
 };
