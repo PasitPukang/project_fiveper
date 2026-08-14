@@ -62,16 +62,16 @@ export default function Login() {
       console.warn('Backend server offline, performing demo login fallback:', err);
     }
 
-    // Demo Fallback Login when backend is offline or custom credentials entered
+    // Demo Fallback Login when backend is offline
     let detectedRole = 'ผู้ดูแลระบบ';
-    let defaultName = 'ผู้ดูแลระบบ (Admin Demo)';
+    let defaultName = 'ผู้ดูแลระบบ';
 
     if (email.toLowerCase().includes('teacher') || email.includes('อาจารย์')) {
       detectedRole = 'อาจารย์';
-      defaultName = 'ดร.สมชาย ใจดี (อาจารย์)';
+      defaultName = 'ดร.สมหญิง มีชัย';
     } else if (email.toLowerCase().includes('student') || email.includes('นิสิต') || email.includes('นักศึกษา')) {
       detectedRole = 'นักศึกษา';
-      defaultName = 'นายกิตติคุณ เรียนดี (นิสิต)';
+      defaultName = 'สมชาย ใจดี';
     }
 
     performDemoLogin(detectedRole, email, defaultName);
@@ -114,14 +114,14 @@ export default function Login() {
               </button>
               <button
                 type="button"
-                onClick={() => performDemoLogin('อาจารย์', 'teacher@ku.th', 'ดร.สมชาย ใจดี')}
+                onClick={() => performDemoLogin('อาจารย์', 'teacher@ku.th', 'ดร.สมหญิง มีชัย')}
                 className="py-1.5 px-1 rounded-lg bg-white border border-green-300 text-green-800 font-semibold hover:bg-green-100 transition text-[11px]"
               >
                 อาจารย์
               </button>
               <button
                 type="button"
-                onClick={() => performDemoLogin('นักศึกษา', 'student@ku.th', 'นายกิตติคุณ เรียนดี')}
+                onClick={() => performDemoLogin('นักศึกษา', 'student@ku.th', 'สมชาย ใจดี')}
                 className="py-1.5 px-1 rounded-lg bg-white border border-green-300 text-green-800 font-semibold hover:bg-green-100 transition text-[11px]"
               >
                 นิสิต

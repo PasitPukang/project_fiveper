@@ -2,7 +2,6 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router';
 import {
   LayoutDashboard,
   FolderKanban,
-  Target,
   MessageSquare,
   FileText,
   LogOut,
@@ -14,7 +13,6 @@ import React from 'react';
 const menuItems = [
   { path: '/teacher', label: 'แดชบอร์ด', icon: LayoutDashboard },
   { path: '/teacher/projects', label: 'โครงการ', icon: FolderKanban },
-  { path: '/teacher/milestones', label: 'เป้าหมาย', icon: Target },
   { path: '/teacher/feedback', label: 'ข้อเสนอแนะ', icon: MessageSquare },
   { path: '/teacher/reports', label: 'รายงาน', icon: FileText },
 ];
@@ -24,7 +22,7 @@ export function DashboardLayout_teacher() {
   const navigate = useNavigate();
 
   const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
-  const userName = currentUser?.name || 'ผู้ใช้งาน';
+  const userName = currentUser?.name || 'ดร.สมหญิง มีชัย';
 
   const handleLogout = () => {
     sessionStorage.removeItem('currentUser');
@@ -37,7 +35,7 @@ export function DashboardLayout_teacher() {
       <aside className="w-60 bg-white border-r border-gray-200 flex flex-col">
         {/* Logo Section */}
         <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl text-green-700">ติดตามโครงการ</h2>
+          <h2 className="text-xl text-green-700 font-bold">ติดตามโครงการ</h2>
           <p className="text-xs text-gray-600 mt-1">ระบบมหาวิทยาลัย</p>
           <div className="mt-3 flex items-center gap-2">
             <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center">
@@ -62,7 +60,7 @@ export function DashboardLayout_teacher() {
                 to={item.path}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                   isActive
-                    ? 'bg-green-50 text-green-700'
+                    ? 'bg-green-50 text-green-700 font-medium'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
@@ -90,8 +88,8 @@ export function DashboardLayout_teacher() {
         {/* Top Navbar */}
         <header className="bg-white border-b border-gray-200 px-8 py-4">
           <div className="flex items-center justify-end gap-4">
-            <span className="text-sm text-gray-700">{userName}</span>
-            <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center">
+            <span className="text-sm font-medium text-gray-800">{userName}</span>
+            <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center shadow-sm">
               <User className="w-5 h-5 text-white" />
             </div>
           </div>

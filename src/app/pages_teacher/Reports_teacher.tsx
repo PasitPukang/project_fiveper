@@ -12,34 +12,26 @@ import {
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Download, TrendingUp, CheckCircle2, BookOpen } from 'lucide-react';
 import * as React from 'react';
-import { chartService, projectService } from '../services/api';
-
-interface ChartItem {
-  id: number;
-  course: string;
-  projects: number;
-  completed: number;
-}
+import { projectService } from '../services/api';
 
 interface Project {
   id: number;
   name: string;
+  course: string;
+  status: string;
   student?: string;
+  dueDate?: string;
+  progress?: number;
 }
 
 export function Reports_teacher() {
-  const [chartData, setChartData] = useState<ChartItem[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [chartJson, projectsJson] = await Promise.all([
-          chartService.getChartData(),
-          projectService.getProjects(),
-        ]);
-        setChartData(chartJson || []);
+        const projectsJson = await projectService.getProjects();
         setProjects(projectsJson || []);
       } catch (err) {
         console.error('Error fetching teacher reports data:', err);
@@ -51,29 +43,60 @@ export function Reports_teacher() {
     fetchData();
   }, []);
 
-  const totalProjects = chartData.reduce((sum, item) => sum + (item.projects || 0), 0);
-  const totalCompleted = chartData.reduce((sum, item) => sum + (item.completed || 0), 0);
+  const totalProjects = projects.length;
+  const totalCompleted = projects.filter((p) => p.status === 'เสร็จสิ้น').length;
   const completionRate = totalProjects > 0
     ? Math.round((totalCompleted / totalProjects) * 100)
     : 0;
-  const totalCourses = chartData.length;
+
+  // Group by course dynamically from actual projects database
+  const courseMap: Record<string, { total: number; completed: number }> = {};
+  projects.forEach((p) => {
+    const course = p.course || 'CS 101';
+    if (!courseMap[course]) {
+      courseMap[course] = { total: 0, completed: 0 };
+    }
+    courseMap[course].total += 1;
+    if (p.status === 'เสร็จสิ้น') {
+      courseMap[course].completed += 1;
+    }
+  });
+
+  const totalCourses = Object.keys(courseMap).length;
 
   const summaryStats = [
-    { label: 'โครงการทั้งหมด', value: String(totalProjects || 4), icon: TrendingUp, color: 'text-green-600' },
-    { label: 'อัตราความสำเร็จ', value: `${completionRate || 75}%`, icon: TrendingUp, color: 'text-green-600' },
-    { label: 'เสร็จสิ้นแล้ว', value: String(totalCompleted || 3), icon: CheckCircle2, color: 'text-green-600' },
-    { label: 'วิชาในความดูแล', value: String(totalCourses || 3), icon: BookOpen, color: 'text-blue-600' },
+    { label: 'โครงการทั้งหมด', value: String(totalProjects), icon: TrendingUp, color: 'text-green-600' },
+    { label: 'อัตราความสำเร็จ', value: `${completionRate}%`, icon: TrendingUp, color: 'text-green-600' },
+    { label: 'เสร็จสิ้นแล้ว', value: String(totalCompleted), icon: CheckCircle2, color: 'text-green-600' },
+    { label: 'วิชาในความดูแล', value: String(totalCourses), icon: BookOpen, color: 'text-blue-600' },
   ];
 
-  const barChartData = chartData.map((item) => ({
-    course: item.course,
-    completion: item.projects > 0 ? Math.round((item.completed / item.projects) * 100) : 0,
-    total: item.projects,
-    completed: item.completed,
-  }));
+  const barChartData = Object.keys(courseMap).map((course) => {
+    const total = courseMap[course].total;
+    const completed = courseMap[course].completed;
+    return {
+      course,
+      completion: total > 0 ? Math.round((completed / total) * 100) : 0,
+      total,
+      completed,
+    };
+  });
 
   const handleExportPDF = () => {
     alert('ระบบกำลังจัดเตรียมไฟล์รายงานสรุปของอาจารย์...');
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'เสร็จสิ้น':
+        return 'bg-green-100 text-green-800';
+      case 'กำลังดำเนินการ':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'ยังไม่เริ่ม':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
   };
 
   if (loading) return <p className="p-6 text-gray-500">กำลังโหลดรายงานการเรียนการสอน...</p>;
@@ -82,7 +105,7 @@ export function Reports_teacher() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl text-gray-900">รายงานสำหรับอาจารย์</h1>
+          <h1 className="text-3xl text-gray-900 font-bold">รายงานสำหรับอาจารย์</h1>
           <p className="text-gray-600 mt-1">วิเคราะห์ความก้าวหน้าโครงการของนิสิตแยกตามรายวิชา</p>
         </div>
         <Button onClick={handleExportPDF} className="bg-green-600 hover:bg-green-700">
@@ -100,7 +123,7 @@ export function Reports_teacher() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600">{stat.label}</p>
-                    <p className="text-3xl mt-2 text-gray-900">{stat.value}</p>
+                    <p className="text-3xl mt-2 text-gray-900 font-bold">{stat.value}</p>
                   </div>
                   <Icon className={`w-8 h-8 ${stat.color}`} />
                 </div>
@@ -142,12 +165,14 @@ export function Reports_teacher() {
               <TableRow>
                 <TableHead>ชื่อโครงการ</TableHead>
                 <TableHead>นิสิตผู้รับผิดชอบ</TableHead>
+                <TableHead>รายวิชา</TableHead>
+                <TableHead>สถานะ</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {projects.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={2} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={4} className="text-center py-8 text-gray-500">
                     ไม่มีข้อมูลโครงการ
                   </TableCell>
                 </TableRow>
@@ -155,7 +180,13 @@ export function Reports_teacher() {
                 projects.map((project) => (
                   <TableRow key={project.id}>
                     <TableCell className="text-gray-900 font-medium">{project.name}</TableCell>
-                    <TableCell>{project.student || 'นิสิต'}</TableCell>
+                    <TableCell>{project.student || 'สมชาย ใจดี'}</TableCell>
+                    <TableCell>{project.course || 'CS 101'}</TableCell>
+                    <TableCell>
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>
+                        {project.status || 'กำลังดำเนินการ'}
+                      </span>
+                    </TableCell>
                   </TableRow>
                 ))
               )}
