@@ -13,28 +13,21 @@ import {
 import { MessageSquare, User, Calendar } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import React from 'react';
-
-// Backend: GET  /api/feedback → List<Feedback> { id, comment, instructorName, date, projectName }
-// Backend: POST /api/feedback → Feedback
+import { feedbackService, projectService } from '../services/api';
 
 interface FeedbackItem {
   id: number;
   comment: string;
   instructorName: string;
-  date: string;        
+  date: string;
   projectName: string;
 }
-
-const FEEDBACK_API_URL = 'http://localhost:8080/api/feedback'; // ✅ แก้จาก 5173 → 8080
-const PROJECTS_API_URL = 'http://localhost:8080/api/projects';
 
 interface ProjectItem {
   id: number;
   name: string;
-  student: string;
+  student?: string;
 }
-
-
 
 export function Feedback() {
   const [feedbackData, setFeedbackData] = useState<FeedbackItem[]>([]);
@@ -43,75 +36,49 @@ export function Feedback() {
   const [feedbackText, setFeedbackText] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('')
 
-  // Fetch feedback data from API
-  
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [fData, pData] = await Promise.all([
+        feedbackService.getFeedback(),
+        projectService.getProjects(),
+      ]);
+      setFeedbackData(fData || []);
+      setProjects(pData || []);
+    } catch (err) {
+      console.error('Error loading feedback data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [feedbackRes, projectsRes] = await Promise.all([
-          fetch(FEEDBACK_API_URL),
-          fetch(PROJECTS_API_URL),
-        ]);
-  
-        if (!feedbackRes.ok) throw new Error('Failed to fetch feedback');
-        if (!projectsRes.ok) throw new Error('Failed to fetch projects');
-  
-        const feedbackJson: FeedbackItem[] = await feedbackRes.json();
-        const projectsJson: ProjectItem[] = await projectsRes.json();
-  
-        setFeedbackData(feedbackJson);
-        setProjects(projectsJson);
-  
-      } catch (err) {
-        console.error(err);
-        setError('ไม่สามารถโหลดข้อมูลได้');
-      } finally {
-        setLoading(false);
-      }
-    };
-  
-    fetchData();
+    loadData();
   }, []);
-  
 
   const handleSubmitFeedback = async () => {
     if (!selectedProject || !feedbackText) {
       alert('กรุณาเลือกโครงการและกรอกข้อเสนอแนะ');
       return;
     }
-  
+
     const selectedProjectData = projects.find(
       (p) => p.id.toString() === selectedProject
     );
-  
+
     setSubmitting(true);
-  
-    try {
-      const response = await fetch(FEEDBACK_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          comment: feedbackText,
-          projectName: selectedProjectData?.name ?? '',
-        }),
-      });
-  
-      if (!response.ok) throw new Error('Failed to submit');
-  
-      const newFeedback: FeedbackItem = await response.json();
-  
-      setFeedbackData((prev) => [newFeedback, ...prev]);
-      setFeedbackText('');
-      setSelectedProject('');
-  
-    } catch (error) {
-      console.error(error);
-      alert('เกิดข้อผิดพลาดในการส่งข้อเสนอแนะ');
-    } finally {
-      setSubmitting(false);
-    }
+    await feedbackService.addFeedback({
+      comment: feedbackText,
+      instructorName: 'ผู้ดูแลระบบ / อาจารย์ประจำวิชา',
+      date: new Date().toISOString().split('T')[0],
+      projectName: selectedProjectData?.name ?? 'โครงการพัฒนาซอฟต์แวร์',
+    });
+
+    setFeedbackText('');
+    setSelectedProject('');
+    setSubmitting(false);
+    await loadData();
   };
 
   return (
@@ -131,9 +98,9 @@ export function Feedback() {
         {/* Student View */}
         <TabsContent value="student" className="space-y-4 mt-6">
           {loading ? (
-            <p>กำลังโหลดข้อมูล...</p>
+            <p className="p-6 text-gray-500">กำลังโหลดข้อเสนอแนะ...</p>
           ) : feedbackData.length === 0 ? (
-            <p className="text-gray-500">ยังไม่มีข้อเสนอแนะ</p>
+            <p className="text-gray-500 p-6">ยังไม่มีข้อเสนอแนะ</p>
           ) : (
             <Card>
               <CardHeader>
@@ -169,7 +136,7 @@ export function Feedback() {
                           </div>
                           {feedback.projectName && (
                             <div className="pl-8">
-                              <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                              <span className="text-xs bg-green-100 text-green-800 px-2.5 py-1 rounded-full font-medium">
                                 {feedback.projectName}
                               </span>
                             </div>
@@ -200,7 +167,7 @@ export function Feedback() {
                   <SelectContent>
                     {projects.map((project) => (
                       <SelectItem key={project.id} value={project.id.toString()}>
-                        {project.name} - {project.student}
+                        {project.name} {project.student ? `- ${project.student}` : ''}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -222,7 +189,7 @@ export function Feedback() {
               <Button
                 onClick={handleSubmitFeedback}
                 disabled={submitting}
-                className="w-full bg-green-600 hover:bg-green-700"
+                className="w-full bg-green-600 hover:bg-green-700 font-medium"
               >
                 {submitting ? 'กำลังส่ง...' : 'ส่งข้อเสนอแนะ'}
               </Button>

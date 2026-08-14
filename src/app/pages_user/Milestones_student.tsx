@@ -20,6 +20,7 @@ import {
 import { Plus, Calendar } from 'lucide-react';
 import { Progress } from '../components/ui/progress';
 import * as React from 'react';
+import { milestoneService } from '../services/api';
 
 interface Milestone {
   id: number;
@@ -29,8 +30,6 @@ interface Milestone {
   progress: number;
 }
 
-const API_URL = 'http://localhost:8080/api/milestones';
-
 export function Milestones_student() {
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,22 +37,15 @@ export function Milestones_student() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({ name: '', dueDate: '' });
 
-  // Fetch milestones from API
-  useEffect(() => {
-    const fetchMilestones = async () => {
-      try {
-        const response = await fetch(API_URL);
-        if (!response.ok) throw new Error('Failed to fetch milestones');
-        const data: Milestone[] = await response.json();
-        setMilestones(data);
-      } catch (error) {
-        console.error('Error fetching milestones:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const loadMilestones = async () => {
+    setLoading(true);
+    const data = await milestoneService.getMilestones();
+    setMilestones(data);
+    setLoading(false);
+  };
 
-    fetchMilestones();
+  useEffect(() => {
+    loadMilestones();
   }, []);
 
   const handleAddMilestone = () => {
@@ -61,7 +53,6 @@ export function Milestones_student() {
     setIsModalOpen(true);
   };
 
-  // POST /api/milestones
   const handleSaveMilestone = async () => {
     if (!formData.name || !formData.dueDate) {
       alert('กรุณากรอกข้อมูลให้ครบทุกช่อง');
@@ -69,77 +60,24 @@ export function Milestones_student() {
     }
 
     setSaving(true);
-    try {
-      const newMilestone = {
-        name: formData.name,
-        dueDate: formData.dueDate,
-        status: 'ยังไม่เริ่ม',
-        progress: 0,
-      };
-
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newMilestone),
-      });
-
-      if (!response.ok) throw new Error('Failed to create milestone');
-
-      const created: Milestone = await response.json();
-      setMilestones((prev) => [...prev, created]);
-      setIsModalOpen(false);
-    } catch (error) {
-      console.error('Error creating milestone:', error);
-      alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง');
-    } finally {
-      setSaving(false);
-    }
+    await milestoneService.addMilestone({
+      name: formData.name,
+      dueDate: formData.dueDate,
+      status: 'ยังไม่เริ่ม',
+      progress: 0,
+    });
+    setIsModalOpen(false);
+    setSaving(false);
+    await loadMilestones();
   };
 
-  // PUT /api/milestones/:id
   const handleStatusChange = async (id: number, newStatus: string) => {
     const newProgress =
       newStatus === 'เสร็จสิ้น' ? 100 :
       newStatus === 'กำลังดำเนินการ' ? 50 : 0;
 
-    // Optimistic update
-    setMilestones((prev) =>
-      prev.map((m) =>
-        m.id === id ? { ...m, status: newStatus, progress: newProgress } : m
-      )
-    );
-
-    try {
-      const target = milestones.find((m) => m.id === id);
-      if (!target) return;
-
-      const response = await fetch(`${API_URL}/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...target,
-          status: newStatus,
-          progress: newProgress,
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to update milestone');
-
-      const updated: Milestone = await response.json();
-      // Sync with server response
-      setMilestones((prev) =>
-        prev.map((m) => (m.id === id ? updated : m))
-      );
-    } catch (error) {
-      console.error('Error updating milestone:', error);
-      alert('เกิดข้อผิดพลาดในการอัปเดตสถานะ กรุณาลองใหม่อีกครั้ง');
-      // Revert optimistic update on error
-      setMilestones((prev) =>
-        prev.map((m) =>
-          m.id === id ? { ...m, status: milestones.find((x) => x.id === id)?.status ?? m.status } : m
-        )
-      );
-    }
+    await milestoneService.updateMilestone(id, { status: newStatus, progress: newProgress });
+    await loadMilestones();
   };
 
   const getStatusColor = (status: string) => {
@@ -153,14 +91,13 @@ export function Milestones_student() {
     }
   };
 
-  if (loading) return <p>กำลังโหลดข้อมูล...</p>;
+  if (loading) return <p className="p-6 text-gray-500">กำลังโหลดข้อมูลเป้าหมาย...</p>;
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl text-gray-900">เป้าหมาย</h1>
+          <h1 className="text-3xl text-gray-900">เป้าหมายของฉัน</h1>
           <p className="text-gray-600 mt-1">ติดตามเป้าหมายและความก้าวหน้าโครงการ</p>
         </div>
         <Button onClick={handleAddMilestone} className="bg-green-600 hover:bg-green-700">
@@ -169,9 +106,8 @@ export function Milestones_student() {
         </Button>
       </div>
 
-      {/* Milestones List */}
       {milestones.length === 0 ? (
-        <p className="text-gray-500">ไม่มีข้อมูลเป้าหมาย</p>
+        <p className="text-gray-500 p-6">ไม่มีข้อมูลเป้าหมาย</p>
       ) : (
         <div className="grid gap-4">
           {milestones.map((milestone) => (
@@ -180,7 +116,7 @@ export function Milestones_student() {
                 <div className="space-y-4">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <h3 className="text-lg text-gray-900">{milestone.name}</h3>
+                      <h3 className="text-lg font-medium text-gray-900">{milestone.name}</h3>
                       {milestone.dueDate && (
                         <div className="flex items-center gap-2 mt-1 text-sm text-gray-600">
                           <Calendar className="w-4 h-4" />
@@ -208,13 +144,13 @@ export function Milestones_student() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-600">ความก้าวหน้า</span>
-                      <span className="text-gray-900">{milestone.progress}%</span>
+                      <span className="text-gray-900 font-semibold">{milestone.progress}%</span>
                     </div>
                     <Progress value={milestone.progress} className="h-2" />
                   </div>
 
                   <div>
-                    <span className={`px-3 py-1 rounded-full text-xs ${getStatusColor(milestone.status)}`}>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(milestone.status)}`}>
                       {milestone.status}
                     </span>
                   </div>
@@ -225,7 +161,6 @@ export function Milestones_student() {
         </div>
       )}
 
-      {/* Add Milestone Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>

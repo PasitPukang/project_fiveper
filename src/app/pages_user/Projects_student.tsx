@@ -28,6 +28,7 @@ import {
 } from '../components/ui/table';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import * as React from 'react';
+import { projectService } from '../services/api';
 
 interface Project {
   id: number;
@@ -37,8 +38,6 @@ interface Project {
   dueDate: string;
   status: string;
 }
-
-const API_URL = 'http://localhost:8080/api/project-details';
 
 export function Projects_student() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -51,29 +50,23 @@ export function Projects_student() {
     description: '',
     course: '',
     dueDate: '',
-    status: '', // Default status
+    status: '',
   });
 
-  // GET all projects
+  const loadProjects = async () => {
+    setLoading(true);
+    const data = await projectService.getProjects();
+    setProjects(data);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        const response = await fetch(API_URL);
-        if (!response.ok) throw new Error('Failed to fetch projects');
-        const data: Project[] = await response.json();
-        setProjects(data);
-      } catch (error) {
-        console.error('Error fetching projects:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProjects();
+    loadProjects();
   }, []);
 
   const handleAddProject = () => {
     setEditingProject(null);
-    setFormData({ name: '', description: '', course: '', dueDate: '', status: '' });
+    setFormData({ name: '', description: '', course: '', dueDate: '', status: 'กำลังดำเนินการ' });
     setIsModalOpen(true);
   };
 
@@ -89,27 +82,12 @@ export function Projects_student() {
     setIsModalOpen(true);
   };
 
-  // DELETE /api/project-details/:id
   const handleDeleteProject = async (id: number) => {
     if (!window.confirm('ต้องการลบโครงการนี้ใช่หรือไม่?')) return;
-
-    // Optimistic update
-    setProjects((prev) => prev.filter((p) => p.id !== id));
-
-    try {
-      const response = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
-      if (!response.ok) throw new Error('Failed to delete project');
-    } catch (error) {
-      console.error('Error deleting project:', error);
-      alert('เกิดข้อผิดพลาดในการลบโครงการ กรุณาลองใหม่อีกครั้ง');
-      // Reload to restore state
-      const response = await fetch(API_URL);
-      const data: Project[] = await response.json();
-      setProjects(data);
-    }
+    await projectService.deleteProject(id);
+    await loadProjects();
   };
 
-  // POST or PUT
   const handleSaveProject = async () => {
     if (!formData.name || !formData.course || !formData.dueDate) {
       alert('กรุณากรอกข้อมูลให้ครบ (ชื่อโครงการ, รายวิชา, วันครบกำหนด)');
@@ -117,37 +95,14 @@ export function Projects_student() {
     }
 
     setSaving(true);
-    try {
-      if (editingProject) {
-        // PUT /api/project-details/:id
-        const response = await fetch(`${API_URL}/${editingProject.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...formData, status: editingProject.status }),
-        });
-        if (!response.ok) throw new Error('Failed to update project');
-        const updated: Project = await response.json();
-        setProjects((prev) =>
-          prev.map((p) => (p.id === editingProject.id ? updated : p))
-        );
-      } else {
-        // POST /api/project-details
-        const response = await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...formData, status: '' }),
-        });
-        if (!response.ok) throw new Error('Failed to create project');
-        const created: Project = await response.json();
-        setProjects((prev) => [...prev, created]);
-      }
-      setIsModalOpen(false);
-    } catch (error) {
-      console.error('Error saving project:', error);
-      alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง');
-    } finally {
-      setSaving(false);
+    if (editingProject) {
+      await projectService.updateProject(editingProject.id, formData);
+    } else {
+      await projectService.addProject(formData);
     }
+    setIsModalOpen(false);
+    setSaving(false);
+    await loadProjects();
   };
 
   const getStatusColor = (status: string) => {
@@ -158,14 +113,15 @@ export function Projects_student() {
         return 'bg-yellow-100 text-yellow-800';
       case 'ยังไม่เริ่ม':
         return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
-  if (loading) return <p>กำลังโหลดข้อมูล...</p>;
+  if (loading) return <p className="p-6 text-gray-500">กำลังโหลดข้อมูลโครงการ...</p>;
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl text-gray-900">โครงการของฉัน</h1>
@@ -177,7 +133,6 @@ export function Projects_student() {
         </Button>
       </div>
 
-      {/* Projects Table */}
       <Card>
         <CardContent className="p-0">
           {projects.length === 0 ? (
@@ -198,7 +153,7 @@ export function Projects_student() {
                   <TableRow key={project.id}>
                     <TableCell>
                       <div>
-                        <p className="text-gray-900">{project.name}</p>
+                        <p className="text-gray-900 font-medium">{project.name}</p>
                         <p className="text-xs text-gray-600">{project.description}</p>
                       </div>
                     </TableCell>
@@ -209,8 +164,8 @@ export function Projects_student() {
                         : '-'}
                     </TableCell>
                     <TableCell>
-                      <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(project.status)}`}>
-                        {project.status}
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>
+                        {project.status || 'กำลังดำเนินการ'}
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
@@ -239,7 +194,6 @@ export function Projects_student() {
         </CardContent>
       </Card>
 
-      {/* Add/Edit Project Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -292,21 +246,21 @@ export function Projects_student() {
               />
             </div>
             <div className="space-y-2">
-  <Label>สถานะ</Label>
-  <Select
-    value={formData.status}
-    onValueChange={(value) => setFormData({ ...formData, status: value })}
-  >
-    <SelectTrigger>
-      <SelectValue placeholder="เลือกสถานะ" />
-    </SelectTrigger>
-    <SelectContent>
-      <SelectItem value="ยังไม่เริ่ม">ยังไม่เริ่ม</SelectItem>
-      <SelectItem value="กำลังดำเนินการ">กำลังดำเนินการ</SelectItem>
-      <SelectItem value="เสร็จสิ้น">เสร็จสิ้น</SelectItem>
-    </SelectContent>
-  </Select>
-</div>
+              <Label>สถานะ</Label>
+              <Select
+                value={formData.status}
+                onValueChange={(value) => setFormData({ ...formData, status: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="เลือกสถานะ" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ยังไม่เริ่ม">ยังไม่เริ่ม</SelectItem>
+                  <SelectItem value="กำลังดำเนินการ">กำลังดำเนินการ</SelectItem>
+                  <SelectItem value="เสร็จสิ้น">เสร็จสิ้น</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsModalOpen(false)} disabled={saving}>
