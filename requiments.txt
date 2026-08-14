@@ -1,131 +1,359 @@
 ================================================================================
-เอกสารข้อกำหนดความต้องการซอฟต์แวร์ (Software Requirements Specification - SRS)
+เอกสารข้อกำหนดความต้องการซอฟต์แวร์ฉบับสมบูรณ์ (Software Requirements Specification - SRS)
 ชื่อระบบ: ระบบติดตามการดำเนินงานของนิสิต (Student Progress Tracking System - project_fiveper)
+รหัสเอกสาร: SRS-FIVEPER-2026-V2.0
 ================================================================================
 
-1. วัตถุประสงค์ของระบบ (System Purpose & Overview)
 --------------------------------------------------------------------------------
-ระบบติดตามการดำเนินงานของนิสิต (project_fiveper) พัฒนาขึ้นเพื่อเป็นเครื่องมือกลางสำหรับ
-นิสิต อาจารย์ประจำวิชา และผู้ดูแลระบบ ในการติดตามความก้าวหน้า ตรวจสอบเป้าหมายโครงการ
-และแลกเปลี่ยนข้อเสนอแนะในการทำโครงงาน/โปรเจกต์การศึกษา เพื่อช่วยเพิ่มประสิทธิภาพในการบริหารจัดการ
-โครงการ ลดความซ้ำซ้อนของการติดตามงาน และเพิ่มความโปร่งใสในกระบวนการเรียนการสอน
-
-2. ขอบเขตของระบบ (System Scope)
+ประวัติการปรับปรุงเอกสาร (Document Revision History & Change Log)
 --------------------------------------------------------------------------------
-- รองรับการเข้าถึงใช้งานผ่านเว็บแอปพลิเคชัน (Responsive Web Application)
-- รองรับสิทธิ์ผู้ใช้งาน 3 บทบาทหลัก: ผู้ดูแลระบบ (Admin), อาจารย์ (Teacher), และ นิสิต (Student)
-- รองรับการทำงานแบบ Hybrid Database (Spring Boot REST API + MySQL ในเครื่อง / Supabase Cloud PostgreSQL / LocalStorage Fallback)
-- รองรับการใช้งานทั้งบนเครื่อง Local และการติดตั้งบนคลาวด์ (GitHub Pages / Supabase Cloud)
-
-3. ผู้ใช้งานระบบและสิทธิ์การใช้งาน (User Roles & Permissions)
---------------------------------------------------------------------------------
-3.1 ผู้ดูแลระบบ (Admin):
-    - สามารถจัดการข้อมูลผู้ใช้งานทั้งหมดในระบบ (เพิ่ม, แก้ไข, ลบ, เปลี่ยนบทบาท)
-    - สามารถเข้าถึงและจัดการโครงการ เป้าหมาย ข้อเสนอแนะ และภาพรวมทั้งระบบได้
-    - เข้าถึงเมนู "จัดการระบบ (User Management)" ได้เพียงบทบาทเดียว
-
-3.2 อาจารย์ (Teacher / Instructor):
-    - สามารถเรียกดูโครงการของนิสิตในความดูแล และค้นหาโครงการตามรายวิชาได้
-    - สามารถประเมินความก้าวหน้า เพิ่มข้อเสนอแนะ (Feedback) ให้กับนิสิตในแต่ละโครงการได้
-    - สามารถเรียกดูแดชบอร์ดสรุปผลการดำเนินงานและรายงานความก้าวหน้ารายวิชาได้
-
-3.3 นิสิต (Student):
-    - สามารถสร้าง แก้ไข และติดตามสถานะโครงการของตนเองได้
-    - สามารถจัดการเป้าหมาย (Milestone) และอัปเดตเปอร์เซ็นต์ความก้าวหน้าของงานได้
-    - สามารถอ่านข้อเสนอแนะจากอาจารย์ที่ส่งถึงโครงการของตนเองได้
-
-4. ข้อกำหนดฟังก์ชันการทำงาน (Functional Requirements - FR)
---------------------------------------------------------------------------------
-[FR-1] ระบบยืนยันตัวตนและการเข้าสู่ระบบ (Authentication & Role Authorization)
-   - FR-1.1: ผู้ใช้สามารถเข้าสู่ระบบด้วย อีเมล (Email) และ รหัสผ่าน (Password)
-   - FR-1.2: ระบบมีปุ่ม "ทดลองเข้าสู่ระบบตามบทบาท (Demo Login)" 3 บทบาท (Admin, Teacher, Student) สำหรับการทดลองใช้งาน
-   - FR-1.3: ระบบจะจัดเก็บข้อมูล Session สิทธิ์ผู้ใช้งานปัจจุบันไว้ใน sessionStorage
-   - FR-1.4: ระบบตรวจสอบสิทธิ์การเข้าถึงหน้าเว็บ (Role-based Routing) ป้องกันไม่ให้นิสิตหรืออาจารย์เข้าถึงเมนูแอดมิน
-
-[FR-2] ระบบจัดการผู้ใช้งาน (User Management)
-   - FR-2.1: ผู้ดูแลระบบสามารถเพิ่มผู้ใช้งานใหม่ โดยกำหนด รหัสผู้ใช้, ชื่อ-นามสกุล, อีเมล, บทบาท และรหัสผ่าน
-   - FR-2.2: สามารถแก้ไขข้อมูลผู้ใช้และรีเซ็ตรหัสผ่านได้
-   - FR-2.3: สามารถลบผู้ใช้ที่ไม่ต้องการออกจากระบบได้
-
-[FR-3] ระบบจัดการโครงการ (Project Management & Progress Tracking)
-   - FR-3.1: นิสิตสามารถเพิ่มโครงการใหม่ โดยระบุ ชื่อโครงการ, รายวิชา, รายละเอียด, วันครบกำหนดส่ง และสถานะ
-   - FR-3.2: อาจารย์และแอดมินสามารถดูตารางสรุปโครงการ นิสิตผู้รับผิดชอบ รายวิชา และสถานะการดำเนินงานได้
-   - FR-3.3: รองรับสถานะโครงการ 3 รหัส: "ยังไม่เริ่ม", "กำลังดำเนินการ", "เสร็จสิ้น"
-   - FR-3.4: รองรับการแก้ไขรายละเอียดและการลบโครงการ
-
-[FR-4] ระบบจัดการเป้าหมาย (Milestone Tracking)
-   - FR-4.1: แสดงรายการเป้าหมายหลักไมล์ของโครงการพร้อมกำหนดวันเสร็จสิ้น
-   - FR-4.2: สามารถปรับเปลี่ยนเปอร์เซ็นต์ความก้าวหน้า (Progress 0% - 100%) และสถานะการทำงานได้
-
-[FR-5] ระบบข้อเสนอแนะและประเมินผล (Feedback & Review System)
-   - FR-5.1: อาจารย์สามารถเลือกโครงการของนิสิต และบันทึกข้อเสนอแนะ/คำแนะนำเชิงลึกได้
-   - FR-5.2: บันทึกชื่ออาจารย์ผู้ให้คำแนะนำ วันที่บันทึก และชื่อโครงการกำกับไว้อย่างชัดเจน
-   - FR-5.3: นิสิตสามารถเข้าดูประวัติข้อเสนอแนะย้อนหลังที่เกี่ยวข้องกับโครงการของตนเองได้
-
-[FR-6] ระบบแดชบอร์ดและรายงาน (Dashboard & Analytics Reports)
-   - FR-6.1: แสดงการ์ดสรุปจำนวนโครงการทั้งหมด, กำลังดำเนินการ, เสร็จสิ้น, และจำนวนรายวิชา
-   - FR-6.2: แสดงกราฟแท่ง (Bar Chart) เปรียบเทียบความก้าวหน้าโครงการแยกตามรายวิชา (เช่น CS 101, CS 201, CS 301)
-   - FR-6.3: แสดงรายการโครงการล่าสุดในความดูแล
-
-5. ข้อกำหนดด้านเทคนิคและสถาปัตยกรรม (Technical & Non-Functional Requirements)
---------------------------------------------------------------------------------
-[NFR-1] สถาปัตยกรรมซอฟต์แวร์และการเชื่อมต่อข้อมูล (Data Architecture)
-   - Frontend: Vite + React 18 + TypeScript + Tailwind CSS
-   - Backend API: Spring Boot Java (RESTful Controller at http://localhost:8080)
-   - Local DB: MySQL (jdbc:mysql://localhost:8700/webdb)
-   - Cloud DB: Supabase Cloud PostgreSQL (https://vvxxvetiydnxlokncwun.supabase.co)
-   - Data Resilience: มีระบบ Hybrid API Service (api.ts) ตรวจสอบการเชื่อมต่ออัตโนมัติ 
-     (Spring Boot Server -> Supabase Cloud DB -> LocalStorage Fallback)
-
-[NFR-2] การออกแบบส่วนติดต่อผู้ใช้ (UI/UX Design)
-   - ออกแบบตามหลัก Responsive Web Design รองรับการใช้งานผ่านหน้าจอ Desktop, Tablet, และ Mobile
-   - ใช้ชุดสีเขียวการศึกษา (University Green Theme) สะอาด สบายตา อ่านง่าย
-
-[NFR-3] ความปลอดภัยของข้อมูล (Security)
-   - ซิงค์ข้อมูลกับ Supabase Cloud ผ่านโปรโตคอล HTTPS พร้อมระบบ SSL Encryption
-   - เปิดใช้งาน Row Level Security (RLS) บน Supabase Cloud
-
-6. โครงสร้างฐานข้อมูล (Database Schema)
---------------------------------------------------------------------------------
-6.1 ตาราง pf_users (ข้อมูลผู้ใช้งาน):
-    - id (BIGINT PRIMARY KEY)
-    - user_id (TEXT - รหัสผู้ใช้ เช่น ADM001, STU001)
-    - name (TEXT - ชื่อ-นามสกุล)
-    - email (TEXT UNIQUE - อีเมล)
-    - role (TEXT - บทบาท: ผู้ดูแลระบบ, อาจารย์, นักศึกษา)
-    - password (TEXT - รหัสผ่าน)
-
-6.2 ตาราง pf_projects (ข้อมูลโครงการ):
-    - id (BIGINT PRIMARY KEY)
-    - name (TEXT - ชื่อโครงการ)
-    - description (TEXT - รายละเอียด)
-    - course (TEXT - รายวิชา)
-    - due_date (DATE - วันครบกำหนด)
-    - status (TEXT - สถานะ)
-    - student (TEXT - ชื่อนิสิตผู้รับผิดชอบ)
-    - progress (INT - เปอร์เซ็นต์ความก้าวหน้า)
-
-6.3 ตาราง pf_milestones (ข้อมูลเป้าหมาย):
-    - id (BIGINT PRIMARY KEY)
-    - name (TEXT - ชื่อเป้าหมาย)
-    - due_date (DATE - วันครบกำหนด)
-    - status (TEXT - สถานะ)
-    - progress (INT - เปอร์เซ็นต์ความก้าวหน้า)
-
-6.4 ตาราง pf_feedback (ข้อมูลข้อเสนอแนะ):
-    - id (BIGINT PRIMARY KEY)
-    - comment (TEXT - ข้อความเสนอแนะ)
-    - instructor_name (TEXT - ชื่ออาจารย์ผู้ให้คำแนะนำ)
-    - date (DATE - วันที่บันทึก)
-    - project_name (TEXT - ชื่อโครงการที่ได้รับคำแนะนำ)
-
-6.5 ตาราง pf_chart (ข้อมูลสถิติรายวิชา):
-    - id (BIGINT PRIMARY KEY)
-    - course (TEXT - รหัสวิชา)
-    - projects (INT - จำนวนโครงการทั้งหมด)
-    - completed (INT - จำนวนโครงการที่เสร็จสิ้น)
+เวอร์ชัน    วันที่           ผู้แก้ไข              รายละเอียดการแก้ไข
+v1.0      14 ส.ค. 2026   ทีมพัฒนาระบบ          ร่างข้อกำหนดความต้องการเบื้องต้น (MVP)
+v2.0      15 ส.ค. 2026   Senior Architect     ขยายข้อกำหนดครอบคลุม Use Case, Sequence Diagram,
+                                              FR-1 ถึง FR-10, NFR, Database ERD (FK),
+                                              API Spec, Testing และ Deployment Plan
 
 ================================================================================
-ปรับปรุงล่าสุด: 15 สิงหาคม 2026
-สถานะเอกสาร: อนุมัติการใช้งาน (Approved)
+สารบัญ (Table of Contents)
+================================================================================
+1. บทนำ วัตถุประสงค์ และขอบเขตระบบ (Introduction & Scope)
+2. อภิธานศัพท์และคำศัพท์เฉพาะ (Glossary & Technical Terms)
+3. สมมติฐานและข้อจำกัดของระบบ (Assumptions & Constraints)
+4. การออกแบบ Use Case และลำดับขั้นตอนทำงาน (Use Case & Sequence Diagrams)
+5. ข้อกำหนดฟังก์ชันการทำงานอย่างละเอียด (Detailed Functional Requirements: FR-1 - FR-10)
+6. ข้อกำหนดด้านคุณภาพและประสิทธิภาพ (Non-Functional Requirements: NFR)
+7. โครงสร้างฐานข้อมูลและการเชื่อมโยงความสัมพันธ์ (Normalized Database Schema & ERD)
+8. ข้อกำหนดทางเทคนิค API (API Specification Summary)
+9. แผนการทดสอบระบบ (Testing Requirements & QA Strategy)
+10. แผนการติดตั้งและเผยแพร่ระบบ (Deployment Plan & Environment Configuration)
+
+================================================================================
+1. บทนำ วัตถุประสงค์ และขอบเขตระบบ (Introduction & Scope)
+================================================================================
+1.1 วัตถุประสงค์ (Purpose):
+    ระบบติดตามการดำเนินงานของนิสิต (project_fiveper) มีวัตถุประสงค์เพื่อเป็นแพลตฟอร์มศูนย์กลาง
+    ในการบริหารจัดการ ติดตามความก้าวหน้าโครงงานการศึกษา (Senior Projects / Course Projects)
+    และประเมินผลการเรียนรู้แบบเรียลไทม์ ช่วยลดช่องว่างการสื่อสารระหว่างนิสิต อาจารย์ประจำวิชา
+    และผู้ดูแลระบบ
+
+1.2 ขอบเขตระบบ (Scope):
+    - ระบบงานเว็บแอปพลิเคชันรูปแบบ Responsive สองภาษา (เน้นภาษาไทยเป็นหลัก)
+    - รองรับการทำงานร่วมกัน 3 บทบาท: ผู้ดูแลระบบ (Admin), อาจารย์ (Teacher), และ นิสิต (Student)
+    - ระบบสถาปัตยกรรมสำรองข้อมูลสามชั้น (Triple-Tier Data Architecture):
+      1) Spring Boot Java REST API + Local MySQL Database
+      2) Supabase Cloud PostgreSQL Database (Automated Cloud Sync)
+      3) LocalStorage Client Persistence (Offline Resilience)
+
+================================================================================
+2. อภิธานศัพท์และคำศัพท์เฉพาะ (Glossary & Technical Terms)
+================================================================================
+คำศัพท์          นิยามและความหมาย
+--------------------------------------------------------------------------------
+SRS             Software Requirements Specification (เอกสารข้อกำหนดความต้องการซอฟต์แวร์)
+FR / NFR        Functional Requirement (ความต้องการเชิงฟังก์ชัน) / Non-Functional Requirement (เชิงคุณภาพ)
+RLS             Row Level Security (ระบบรักษาความปลอดภัยระดับแถวในฐานข้อมูล Supabase Cloud)
+Bcrypt          อัลกอริทึมการเข้ารหัสแฮชรหัสผ่านความปลอดภัยสูง (Password Hashing Algorithm)
+JWT             JSON Web Token (มาตรฐานโครงสร้างการยืนยันตัวตนและการเข้าถึง API)
+RTO             Recovery Time Objective (ระยะเวลาสูงสุดที่ยอมรับได้ในการกู้คืนระบบกลับมาทำงาน)
+RPO             Recovery Point Objective (ปริมาณข้อมูลสูงสุดที่ยอมรับให้สูญหายได้)
+FK / PK         Foreign Key (คีย์นอกเชื่อมตาราง) / Primary Key (คีย์หลักประจำเป็นแถว)
+UAT             User Acceptance Testing (การทดสอบยอมรับระบบโดยผู้ใช้งานจริง)
+REST API        Representational State Transfer API (รูปแบบสถาปัตยกรรมบริการเว็บแลกเปลี่ยนข้อมูล JSON)
+
+================================================================================
+3. สมมติฐานและข้อจำกัดของระบบ (Assumptions & Constraints)
+================================================================================
+3.1 สมมติฐาน (Assumptions):
+    - ผู้ใช้งานมีอุปกรณ์เชื่อมต่ออินเทอร์เน็ตและเว็บเบราว์เซอร์มาตรฐานที่อัปเดตเวอร์ชันแล้ว
+    - สถาบันการศึกษามีข้อมูลรายวิชาและรายชื่อนิสิตเพื่อนำเข้าสู่ระบบเริ่มต้น
+    - Supabase Cloud ให้บริการ Database Service พร้อม SSL Certificate สมบูรณ์
+
+3.2 ข้อจำกัด (Constraints):
+    - จำกัดขนาดไฟล์แนบรายงานประกอบโครงการไม่เกิน 15 MB ต่อไฟล์ (ประเภท PDF, DOCX, ZIP)
+    - การประมวลผลออนไลน์บน GitHub Pages ทำงานในรูปแบบ Client-side Rendering (Vite + React)
+    - รหัสผ่านผู้ใช้งานทุกบัญชีต้องถูกแฮชด้วย Bcrypt ก่อนจัดเก็บบันทึกลงฐานข้อมูล
+
+================================================================================
+4. การออกแบบ Use Case และลำดับขั้นตอนทำงาน (Use Case & Sequence Diagrams)
+================================================================================
+4.1 แผนภาพ Use Case Diagram (ASCII Representation):
+
+    +-------------------+                       +-----------------------------------+
+    |                   |                       |   ระบบติดตามการดำเนินงานของนิสิต  |
+    |                   |-----(Login/Logout)--->|                                   |
+    |   🎓 นักศึกษา     |                       |  (UC-1) สมัครสมาชิก/ยืนยันตัวตน   |
+    |   (Student)       |-----(Manage Proj)---->|  (UC-2) สร้าง/แก้ไขโครงการตนเอง   |
+    |                   |-----(Track Milestone)|  (UC-3) อัปเดตความก้าวหน้างาน      |
+    |                   |-----(View Feedback)-->|  (UC-4) อ่านข้อเสนอแนะอาจารย์    |
+    +-------------------+                       |  (UC-5) อัปโหลดเอกสารประกอบ       |
+                                                |                                   |
+    +-------------------+                       |  (UC-6) ตรวจสอบโครงการในดูแล      |
+    |                   |-----(Review Proj)---->|  (UC-7) ประเมิน & ให้ Feedback    |
+    |   👨‍🏫 อาจารย์        |-----(Assign Proj)---->|  (UC-8) อนุมัติ Milestone งาน     |
+    |   (Teacher)       |-----(Export Report)-->|  (UC-9) ออกรายงานสรุปรายวิชา      |
+    +-------------------+                       |                                   |
+                                                |  (UC-10) จัดการผู้ใช้ & สิทธิ์     |
+    +-------------------+                       |  (UC-11) จัดการตารางข้อมูลทั้งหมด |
+    |   🛡️ แอดมิน       |-----(Admin Manage)--->|  (UC-12) ตรวจสอบ Audit Log        |
+    |   (Admin)         |                       |                                   |
+    +-------------------+                       +-----------------------------------+
+
+4.2 Sequence Diagram: กระบวนการเข้าสู่ระบบ (Authentication Flow)
+
+   [User / Browser]              [Frontend (React)]         [API Service / Supabase]        [Database]
+          |                              |                             |                         |
+          |--- 1. ป้อน Email/Password -->|                             |                         |
+          |                              |--- 2. POST /api/login ----->|                         |
+          |                              |                               |--- 3. Query User ---->|
+          |                              |                               |<-- 4. User Data ------|
+          |                              |<-- 5. Return JWT & Role Data--|                         |
+          |                              |                               |                         |
+          |                              |-- 6. Save SessionStorage ---->|                         |
+          |<-- 7. Redirect to Dashboard--|                               |                         |
+
+4.3 Sequence Diagram: การสร้างโครงการและการแจ้งเตือน (Project Creation & Notification Flow)
+
+   [Student]                    [Frontend React]             [Hybrid API Service]            [Database]
+       |                               |                              |                          |
+       |--- 1. กรอกฟอร์มสร้างโครงการ ->|                              |                          |
+       |                               |--- 2. addProject(payload) -->|                          |
+       |                               |                              |--- 3. INSERT pf_projects>|
+       |                               |                              |<-- 4. Return Project ID -|
+       |                               |                              |--- 5. Trigger Notify --->|
+       |                               |<-- 6. Success Notification --|                          |
+       |<-- 7. Update Project List ----|                              |                          |
+
+================================================================================
+5. ข้อกำหนดฟังก์ชันการทำงานอย่างละเอียด (Detailed Functional Requirements: FR)
+================================================================================
+
+[FR-1] ระบบยืนยันตัวตน สิทธิ์การใช้งาน และเซสชัน (Authentication, Authorization & Session)
+   - FR-1.1: การเข้าสู่ระบบ: ตรวจสอบ อีเมล และ รหัสผ่าน คืนค่า JWT Token พร้อม Role
+   - FR-1.2: การสมัครสมาชิก (Registration): นิสิตและอาจารย์สามารถลงทะเบียนเพิ่มบัญชีใหม่ได้
+   - FR-1.3: ลืมรหัสผ่าน (Forgot Password): ระบบส่งลิงก์รีเซ็ตรหัสผ่านไปยังอีเมลผู้ใช้
+   - FR-1.4: การออกจากระบบ (Logout): ล้างข้อมูล JWT Token และ sessionStorage
+   - FR-1.5: การหมดเวลาเซสชัน (Session Timeout): หากไม่มีการโต้ตอบเกิน 60 นาที ระบบจะส่งกลับหน้า Login
+
+[FR-2] กฎการตรวจสอบความถูกต้องข้อมูล (Data Validation Rules)
+   - FR-2.1: รูปแบบอีเมล: ต้องเป็นอีเมลสถาบันถูกต้อง (เช่น user@ku.th หรือ user@university.ac.th)
+   - FR-2.2: นโยบายรหัสผ่าน: ความยาวไม่น้อยกว่า 8 ตัวอักษร ประกอบด้วยอักขระตัวพิมพ์ใหญ่ ตัวพิมพ์เล็ก และตัวเลข
+   - FR-2.3: ความซ้ำซ้อนของรหัสประจำตัว: user_id และ email ต้องไม่ซ้ำกันในระบบ (Unique Constraint)
+
+[FR-3] ระบบจัดการโครงการและกลุ่มงาน (Project & Group Management)
+   - FR-3.1: รองรับโครงการเดี่ยว (Individual) และโครงการกลุ่ม (Group Project มีสมาชิกไม่เกิน 5 คน)
+   - FR-3.2: การแนบไฟล์ประกอบ: รองรับการอัปโหลดไฟล์รายงานหรือข้อเสนอโครงการ (ไฟล์ PDF, DOCX, ZIP ไม่เกิน 15 MB)
+   - FR-3.3: การระบุอาจารย์ที่ปรึกษา: โครงการต้องเชื่อมโยงกับ teacher_id ของอาจารย์ผู้ดูแล
+
+[FR-4] ระบบเป้าหมายและแจ้งเตือนวันครบกำหนด (Milestones & Due Date Reminders)
+   - FR-4.1: นิสิตสามารถเสนอเป้าหมาย (Milestone) และรออาจารย์พิจารณาอนุมัติ
+   - FR-4.2: ระบบคำนวณวันครบกำหนด (Due Date Alert) แจ้งเตือนล่วงหน้า 3 วันก่อนถึงกำหนดส่งงาน
+
+[FR-5] ระบบข้อเสนอแนะและการโต้ตอบ (Interactive Feedback System)
+   - FR-5.1: อาจารย์บันทึกข้อเสนอแนะกำกับรายโครงการ
+   - FR-5.2: นิสิตสามารถกดปุ่ม "ตอบกลับ (Reply)" เพื่อสอบถามเพิ่มเติมในข้อเสนอแนะนั้นได้
+   - FR-5.3: ระบบมีสถานะการอ่านข้อเสนอแนะ ("ยังไม่อ่าน" / "อ่านแล้ว")
+
+[FR-7] ระบบการแจ้งเตือนแบบเรียลไทม์ (Notification System)
+   - FR-7.1: แจ้งเตือนศูนย์กลาง (Notification Badge & Center)
+   - FR-7.2: แจ้งเตือนเมื่อมี Feedback ใหม่จากอาจารย์ หรือเมื่อมีการอัปเดตสถานะโครงการ
+
+[FR-8] ระบบค้นหา และกรองข้อมูลขั้นสูง (Advanced Search & Filter System)
+   - FR-8.1: ค้นหาโครงการตาม ชื่อโครงการ, ชื่อคอมพิวเตอร์นิสิต, รหัสวิชา (CS 101 - CS 401)
+   - FR-8.2: กรองสถานะโครงการ: "ยังไม่เริ่ม", "กำลังดำเนินการ", "เสร็จสิ้น"
+
+[FR-9] ระบบส่งออกรายงาน (Report Export System)
+   - FR-9.1: อาจารย์และแอดมินสามารถส่งออกรายงานสรุปความก้าวหน้าเป็นไฟล์ PDF และ Excel (XLSX)
+
+[FR-10] ระบบบันทึกประวัติการเปลี่ยนแปลง (Audit Logging System)
+   - FR-10.1: บันทึกการกระทำสำคัญ (Create, Update, Delete) โดยเก็บ User ID, Action, Timestamp, IP Address
+
+================================================================================
+6. ข้อกำหนดด้านคุณภาพและประสิทธิภาพ (Non-Functional Requirements: NFR)
+================================================================================
+
+[NFR-1] ประสิทธิภาพการทำงาน (Performance)
+   - เวลาโหลดหน้าเว็บ (Page Load Time): ไม่เกิน 2.0 วินาทีในเครือข่ายปกติ
+   - เวลาตอบสนอง API (API Response Time): ไม่เกิน 200 มิลลิวินาที
+   - การรองรับผู้ใช้งานพร้อมกัน (Concurrent Users): ไม่น้อยกว่า 500 ผู้ใช้งาน
+
+[NFR-2] ความพร้อมใช้งานและการกู้คืน (Availability & Reliability)
+   - Uptime เป้าหมาย: 99.9% ต่อปี
+   - ระบบสำรองฉุกเฉิน (Automatic Fallback): หาก Spring Boot Local Server ไม่ตอบสนองภายใน 1.5 วินาที
+     ระบบจะสลับไปดึงข้อมูลจาก Supabase Cloud DB หรือ LocalStorage โดยอัตโนมัติ
+
+[NFR-3] การขยายตัวของระบบ (Scalability)
+   - รองรับจำนวนนิสิตสูงสุด 10,000 คน และโครงการรวมมากกว่า 50,000 โครงการ
+
+[NFR-4] การสำรองและกู้คืนข้อมูล (Backup & Recovery)
+   - ความถี่ในการสำรองข้อมูล Cloud DB: สำรองข้อมูลอัตโนมัติทุก 24 ชั่วโมง
+   - Recovery Time Objective (RTO): ไม่เกิน 30 นาที
+   - Recovery Point Objective (RPO): ไม่เกิน 1 ชั่วโมง
+
+[NFR-5] ความเข้ากันได้กับเบราว์เซอร์ (Browser Compatibility)
+   - Google Chrome (v100+), Microsoft Edge (v100+), Apple Safari (v15+), Mozilla Firefox (v100+)
+   - รองรับทั้งระบบปฏิบัติการ Windows, macOS, iOS และ Android
+
+[NFR-6] ความปลอดภัยของรหัสผ่านและข้อมูล (Security & Password Encryption)
+   - รหัสผ่านผู้ใช้งานต้องผ่านการเข้ารหัสแฮชด้วย Bcrypt Cost Factor 12 ก่อนบันทึกลง DB
+   - การรับส่งข้อมูลทั้งหมดบน Cloud ผ่านโปรโตคอล HTTPS SSL/TLS 1.3
+   - ตาราง Supabase Cloud มีการเปิดใช้งาน Row Level Security (RLS)
+
+[NFR-7] การจัดการข้อผิดพลาดและบันทึกร่องรอย (Error Handling & Logging)
+   - รูปแบบ Error Response มาตรฐาน: { "status": 400/500, "message": "...", "timestamp": "..." }
+   - บันทึก System Log แยกระดับ INFO, WARN, ERROR ลงในไฟล์ log ประจำวัน
+
+================================================================================
+7. โครงสร้างฐานข้อมูลและการเชื่อมโยงความสัมพันธ์ (Normalized Database Schema & ERD)
+================================================================================
+
+7.1 Diagram สรุปความสัมพันธ์ (Entity-Relationship Specs):
+    - pf_users (1) <--- (N) pf_projects (student_id / teacher_id)
+    - pf_projects (1) <--- (N) pf_milestones (project_id)
+    - pf_projects (1) <--- (N) pf_feedback (project_id)
+    - pf_users (1) <--- (N) pf_notifications (user_id)
+    - pf_users (1) <--- (N) pf_audit_logs (user_id)
+
+7.2 โครงสร้างตารางฐานข้อมูลฉบับสมบูรณ์ (SQL Definition Specs):
+
+-- 1. ตารางข้อมูลผู้ใช้งาน (pf_users)
+CREATE TABLE pf_users (
+  id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  user_id VARCHAR(50) NOT NULL UNIQUE,
+  name VARCHAR(150) NOT NULL,
+  email VARCHAR(150) NOT NULL UNIQUE,
+  role VARCHAR(30) CHECK (role IN ('ผู้ดูแลระบบ', 'อาจารย์', 'นักศึกษา')),
+  password_hash VARCHAR(255) NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 2. ตารางข้อมูลโครงการ (pf_projects)
+CREATE TABLE pf_projects (
+  id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  name VARCHAR(200) NOT NULL,
+  description TEXT,
+  course VARCHAR(50) NOT NULL,
+  due_date DATE,
+  status VARCHAR(30) DEFAULT 'กำลังดำเนินการ',
+  student_id BIGINT REFERENCES pf_users(id) ON DELETE SET NULL,
+  teacher_id BIGINT REFERENCES pf_users(id) ON DELETE SET NULL,
+  student_name VARCHAR(150),
+  attachment_url TEXT,
+  progress INT DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 3. ตารางเป้าหมายและหลักไมล์ (pf_milestones)
+CREATE TABLE pf_milestones (
+  id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  project_id BIGINT REFERENCES pf_projects(id) ON DELETE CASCADE,
+  name VARCHAR(200) NOT NULL,
+  due_date DATE,
+  status VARCHAR(30) DEFAULT 'ยังไม่เริ่ม',
+  progress INT DEFAULT 0,
+  is_approved BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 4. ตารางข้อเสนอแนะ (pf_feedback)
+CREATE TABLE pf_feedback (
+  id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  project_id BIGINT REFERENCES pf_projects(id) ON DELETE CASCADE,
+  instructor_id BIGINT REFERENCES pf_users(id) ON DELETE SET NULL,
+  comment TEXT NOT NULL,
+  instructor_name VARCHAR(150),
+  date DATE DEFAULT CURRENT_DATE,
+  project_name VARCHAR(200),
+  is_read BOOLEAN DEFAULT FALSE,
+  reply_comment TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 5. ตารางการแจ้งเตือน (pf_notifications)
+CREATE TABLE pf_notifications (
+  id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  user_id BIGINT REFERENCES pf_users(id) ON DELETE CASCADE,
+  title VARCHAR(200) NOT NULL,
+  message TEXT NOT NULL,
+  is_read BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 6. ตารางบันทึกประวัติ (pf_audit_logs)
+CREATE TABLE pf_audit_logs (
+  id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  user_id BIGINT REFERENCES pf_users(id) ON DELETE SET NULL,
+  action VARCHAR(100) NOT NULL,
+  details TEXT,
+  ip_address VARCHAR(50),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 7. ตารางสถิติตามรายวิชา (pf_chart)
+CREATE TABLE pf_chart (
+  id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  course VARCHAR(50) NOT NULL UNIQUE,
+  projects INT DEFAULT 0,
+  completed INT DEFAULT 0,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+================================================================================
+8. ข้อกำหนดทางเทคนิค API (API Specification Summary)
+================================================================================
+Method    Endpoint                      Description                        Role Access
+--------------------------------------------------------------------------------
+POST      /api/auth/login               เข้าสู่ระบบ และรับ JWT Token        All
+POST      /api/auth/register            ลงทะเบียนผู้ใช้ใหม่                 All
+POST      /api/auth/forgot-password     รีเซ็ตรหัสผ่านผ่านอีเมล              All
+GET       /api/users                    ดึงรายการผู้ใช้ทั้งหมด               Admin
+POST      /api/users                    สร้างผู้ใช้ใหม่                     Admin
+PUT       /api/users/{id}               แก้ไขข้อมูลผู้ใช้                   Admin
+DELETE    /api/users/{id}               ลบผู้ใช้งาน                        Admin
+GET       /api/project-details          ดึงรายการโครงการทั้งหมด             All
+POST      /api/project-details          สร้างโครงการใหม่                   Student / Teacher
+PUT       /api/project-details/{id}     อัปเดตข้อมูลโครงการ                 Student / Teacher
+DELETE    /api/project-details/{id}     ลบโครงการ                          Admin / Teacher
+GET       /api/milestones               ดึงรายการเป้าหมาย                   All
+POST      /api/milestones               สร้างเป้าหมายใหม่                   Student / Teacher
+PUT       /api/milestones/{id}          อัปเดตเป้าหมาย                     Student / Teacher
+GET       /api/feedback                 ดึงรายการข้อเสนอแนะ                All
+POST      /api/feedback                 บันทึกข้อเสนอแนะใหม่                Teacher / Admin
+PUT       /api/feedback/{id}/reply      นิสิตตอบกลับข้อเสนอแนะ              Student
+GET       /api/notifications            ดึงรายการแจ้งเตือน                  All
+GET       /api/reports/export           ส่งออกรายงาน PDF/Excel              Teacher / Admin
+
+================================================================================
+9. แผนการทดสอบระบบ (Testing Requirements & QA Strategy)
+================================================================================
+9.1 การทดสอบระดับย่อย (Unit Testing):
+    - ทดสอบฟังก์ชันคำนวณความก้าวหน้าโครงการใน api.ts
+    - ทดสอบ Validation Rule ของแบบฟอร์มลงทะเบียนและการกรองอีเมล
+
+9.2 การทดสอบการเชื่อมต่อ (Integration Testing):
+    - ทดสอบการสลับทำงานระหว่าง Spring Boot REST API, Supabase Cloud DB และ LocalStorage Fallback
+    - ทดสอบความถูกต้องของ Foreign Key Constraints ระหว่าง pf_users และ pf_projects
+
+9.3 การทดสอบยอมรับระบบโดยผู้ใช้ (User Acceptance Testing - UAT):
+    - ทดสอบสคริปต์การใช้งานตามบทบาท 3 ผู้ใช้ (Admin, Teacher, Student) บนสภาพแวดล้อมดีพลอยจริง
+
+================================================================================
+10. แผนการติดตั้งและเผยแพร่ระบบ (Deployment Plan & Environment Configuration)
+================================================================================
+10.1 ขั้นตอนการติดตั้งและ Deploy:
+    1) Frontend: สั่งรัน npm run build ในโฟลเดอร์ project_fiveper เพื่อสร้างไฟล์ในโฟลเดอร์ dist
+    2) Distribution Copy: คัดลอกผลลัพธ์ dist ไปไว้ยัง d:\PortfolioV2\public\project_fiveper\
+    3) GitHub Deployment: พุชโค้ดขึ้น GitHub Repo PasitPukang/project_fiveper และ PasitPukang/PortfolioV2
+    4) Cloud Publish: รันคำสั่ง npm run deploy เพื่อส่งขึ้น GitHub Pages บนสาขา gh-pages
+    5) Database Setup: รันสคริปต์ SQL บน Supabase Cloud SQL Editor (vvxxvetiydnxlokncwun)
+
+10.2 การตั้งค่าตัวแปรสภาพแวดล้อม (Environment Variables):
+    - VITE_SUPABASE_URL=https://vvxxvetiydnxlokncwun.supabase.co
+    - VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+    - VITE_API_BASE_URL=http://localhost:8080
+
+================================================================================
+สิ้นสุดเอกสารข้อกำหนดความต้องการซอฟต์แวร์ (SRS V2.0)
 ================================================================================
