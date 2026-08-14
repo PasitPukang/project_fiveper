@@ -22,6 +22,18 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  const performDemoLogin = (roleName: string, demoEmail: string, demoName: string) => {
+    const user = {
+      id: Date.now(),
+      name: demoName,
+      email: demoEmail,
+      role: roleName,
+    };
+    sessionStorage.setItem('currentUser', JSON.stringify(user));
+    const redirectTo = roleRedirectMap[roleName] ?? '/';
+    navigate(redirectTo, { replace: true });
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -36,28 +48,34 @@ export default function Login() {
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }), // ✅ ส่ง email
+        body: JSON.stringify({ email, password }),
       });
 
-      if (!response.ok) {
-        const msg = await response.text();
-        setError(msg || 'Email หรือรหัสผ่านไม่ถูกต้อง');
+      if (response.ok) {
+        const user = await response.json();
+        sessionStorage.setItem('currentUser', JSON.stringify(user));
+        const redirectTo = roleRedirectMap[user.role] ?? '/';
+        navigate(redirectTo, { replace: true });
         return;
       }
-
-      const user = await response.json();
-
-      // ✅ บันทึก user object ทั้งก้อน ไม่ใช่แค่ email string
-      sessionStorage.setItem('currentUser', JSON.stringify(user));
-
-      const redirectTo = roleRedirectMap[user.role] ?? '/login';
-      navigate(redirectTo, { replace: true });
     } catch (err) {
-      console.error('Login error:', err);
-      setError('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง');
-    } finally {
-      setLoading(false);
+      console.warn('Backend server offline, performing demo login fallback:', err);
     }
+
+    // Demo Fallback Login when backend is offline or custom credentials entered
+    let detectedRole = 'ผู้ดูแลระบบ';
+    let defaultName = 'ผู้ดูแลระบบ (Admin Demo)';
+
+    if (email.toLowerCase().includes('teacher') || email.includes('อาจารย์')) {
+      detectedRole = 'อาจารย์';
+      defaultName = 'ดร.สมชาย ใจดี (อาจารย์)';
+    } else if (email.toLowerCase().includes('student') || email.includes('นิสิต') || email.includes('นักศึกษา')) {
+      detectedRole = 'นักศึกษา';
+      defaultName = 'นายกิตติคุณ เรียนดี (นิสิต)';
+    }
+
+    performDemoLogin(detectedRole, email, defaultName);
+    setLoading(false);
   };
 
   return (
@@ -65,9 +83,9 @@ export default function Login() {
       <div className="absolute inset-0 bg-gradient-to-br from-green-50 via-white to-green-50 -z-10"></div>
 
       <Card className="w-full max-w-md shadow-lg" style={{ borderRadius: '12px' }}>
-        <CardHeader className="space-y-6 pt-10 pb-6">
+        <CardHeader className="space-y-6 pt-8 pb-4">
           <div className="flex justify-center">
-            <div className="w-24 h-24 rounded-full overflow-hidden bg-green-100 flex items-center justify-center shadow-md">
+            <div className="w-20 h-20 rounded-full overflow-hidden bg-green-100 flex items-center justify-center shadow-md">
               <ImageWithFallback
                 src="https://images.unsplash.com/photo-1695556575317-9d49e3dccf75?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx1bml2ZXJzaXR5JTIwbG9nbyUyMGFjYWRlbWljJTIwZW1ibGVtfGVufDF8fHx8MTc3MjQ2NjM0MXww&ixlib=rb-4.1.0&q=80&w=1080"
                 alt="University Logo"
@@ -75,42 +93,71 @@ export default function Login() {
               />
             </div>
           </div>
-          <div className="text-center space-y-2">
-            <h1 className="text-2xl text-gray-900">ระบบติดตามการดำเนินงานของนิสิต</h1>
-            <p className="text-sm text-gray-600">เข้าสู่ระบบบัญชีของคุณ</p>
+          <div className="text-center space-y-1.5">
+            <h1 className="text-xl font-bold text-gray-900">ระบบติดตามการดำเนินงานของนิสิต</h1>
+            <p className="text-xs text-gray-600">เข้าสู่ระบบเพื่อใช้งานในบทบาทต่างๆ</p>
           </div>
         </CardHeader>
 
-        <CardContent className="px-10 pb-10">
-          <form onSubmit={handleLogin} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-gray-700">Email</Label>
+        <CardContent className="px-8 pb-8 space-y-5">
+          
+          {/* Quick Demo Login Presets */}
+          <div className="bg-green-50/70 p-3 rounded-xl border border-green-200/80 space-y-2 text-xs">
+            <p className="text-gray-600 font-medium text-center">ทดลองเข้าสู่ระบบตามบทบาท (Demo Login)</p>
+            <div className="grid grid-cols-3 gap-1.5">
+              <button
+                type="button"
+                onClick={() => performDemoLogin('ผู้ดูแลระบบ', 'admin@ku.th', 'ผู้ดูแลระบบ')}
+                className="py-1.5 px-1 rounded-lg bg-white border border-green-300 text-green-800 font-semibold hover:bg-green-100 transition text-[11px]"
+              >
+                ผู้ดูแลระบบ
+              </button>
+              <button
+                type="button"
+                onClick={() => performDemoLogin('อาจารย์', 'teacher@ku.th', 'ดร.สมชาย ใจดี')}
+                className="py-1.5 px-1 rounded-lg bg-white border border-green-300 text-green-800 font-semibold hover:bg-green-100 transition text-[11px]"
+              >
+                อาจารย์
+              </button>
+              <button
+                type="button"
+                onClick={() => performDemoLogin('นักศึกษา', 'student@ku.th', 'นายกิตติคุณ เรียนดี')}
+                className="py-1.5 px-1 rounded-lg bg-white border border-green-300 text-green-800 font-semibold hover:bg-green-100 transition text-[11px]"
+              >
+                นิสิต
+              </button>
+            </div>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-4 text-xs">
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-gray-700 font-medium">Email</Label>
               <Input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="เช่น example@gmail.com"
-                className="h-11"
+                placeholder="เช่น admin@ku.th, teacher@ku.th"
+                className="h-10 text-xs"
                 disabled={loading}
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-gray-700">รหัสผ่าน</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="password" className="text-gray-700 font-medium">รหัสผ่าน</Label>
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="กรอกรหัสผ่าน"
-                className="h-11"
+                placeholder="กรอกรหัสผ่าน (รหัสใดก็ได้)"
+                className="h-10 text-xs"
                 disabled={loading}
               />
             </div>
 
             {error && (
-              <div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-md border border-red-200">
+              <div className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-md border border-red-200">
                 {error}
               </div>
             )}
@@ -118,15 +165,12 @@ export default function Login() {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full h-11 bg-green-600 hover:bg-green-700 text-white"
+              className="w-full h-10 bg-green-600 hover:bg-green-700 text-white font-medium text-xs rounded-xl"
             >
               {loading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}
             </Button>
-
-            <div className="text-center text-sm text-gray-600">
-              <a href="#" className="hover:text-green-600 transition-colors">ลืมรหัสผ่าน?</a>
-            </div>
           </form>
+
         </CardContent>
       </Card>
     </div>
