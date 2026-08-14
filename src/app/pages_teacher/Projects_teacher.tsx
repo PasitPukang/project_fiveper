@@ -26,7 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from '../components/ui/table';
-import { Plus, Edit, Trash2, User } from 'lucide-react';
+import { Plus, Edit, Trash2, User, Search, Filter } from 'lucide-react';
 import * as React from 'react';
 import { projectService } from '../services/api';
 
@@ -42,6 +42,9 @@ interface Project {
 
 export function Projects_teacher() {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterCourse, setFilterCourse] = useState('ALL');
+  const [filterStatus, setFilterStatus] = useState('ALL');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -58,7 +61,7 @@ export function Projects_teacher() {
   const loadProjects = async () => {
     setLoading(true);
     const data = await projectService.getProjects();
-    setProjects(data);
+    setProjects(data || []);
     setLoading(false);
   };
 
@@ -121,14 +124,24 @@ export function Projects_teacher() {
     }
   };
 
+  // Search & Filter (FR-8)
+  const displayedProjects = projects.filter((p) => {
+    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          (p.student && p.student.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                          p.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCourse = filterCourse === 'ALL' || p.course === filterCourse;
+    const matchesStatus = filterStatus === 'ALL' || p.status === filterStatus;
+    return matchesSearch && matchesCourse && matchesStatus;
+  });
+
   if (loading) return <p className="p-6 text-gray-500">กำลังโหลดข้อมูลโครงการ...</p>;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl text-gray-900">โครงการนิสิตในความดูแล</h1>
-          <p className="text-gray-600 mt-1">ติดตามและประเมินโครงการของนิสิตทั้งหมด</p>
+          <h1 className="text-3xl text-gray-900 font-bold">โครงการนิสิตในความดูแล</h1>
+          <p className="text-gray-600 mt-1">ติดตาม ตรวจสอบ และประเมินโครงการของนิสิตทั้งหมด</p>
         </div>
         <Button onClick={handleAddProject} className="bg-green-600 hover:bg-green-700">
           <Plus className="w-4 h-4 mr-2" />
@@ -136,10 +149,51 @@ export function Projects_teacher() {
         </Button>
       </div>
 
+      {/* Search & Filter Controls (FR-8) */}
+      <div className="flex flex-wrap gap-3 items-center justify-between bg-white p-3.5 rounded-xl border border-gray-200">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Input
+            placeholder="ค้นหาชื่อโครงการ, ชื่อนิสิต..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9 h-9 text-xs"
+          />
+        </div>
+        <div className="flex gap-2">
+          <Select value={filterCourse} onValueChange={setFilterCourse}>
+            <SelectTrigger className="w-[140px] h-9 text-xs">
+              <SelectValue placeholder="รายวิชาทั้งหมด" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">ทุกรายวิชา</SelectItem>
+              <SelectItem value="CS 101">CS 101</SelectItem>
+              <SelectItem value="CS 201">CS 201</SelectItem>
+              <SelectItem value="CS 301">CS 301</SelectItem>
+              <SelectItem value="CS 401">CS 401</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-[140px] h-9 text-xs">
+              <SelectValue placeholder="สถานะทั้งหมด" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">ทุกสถานะ</SelectItem>
+              <SelectItem value="กำลังดำเนินการ">กำลังดำเนินการ</SelectItem>
+              <SelectItem value="เสร็จสิ้น">เสร็จสิ้น</SelectItem>
+              <SelectItem value="ยังไม่เริ่ม">ยังไม่เริ่ม</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       <Card>
         <CardContent className="p-0">
-          {projects.length === 0 ? (
-            <p className="text-gray-500 p-6">ไม่มีข้อมูลโครงการ</p>
+          {displayedProjects.length === 0 ? (
+            <p className="text-gray-500 p-6 text-center">
+              {projects.length === 0 ? 'ไม่มีข้อมูลโครงการ' : 'ไม่พบโครงการที่ตรงกับเงื่อนไขการค้นหา'}
+            </p>
           ) : (
             <Table>
               <TableHeader>
@@ -153,7 +207,7 @@ export function Projects_teacher() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {projects.map((project) => (
+                {displayedProjects.map((project) => (
                   <TableRow key={project.id}>
                     <TableCell>
                       <div>

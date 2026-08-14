@@ -24,9 +24,8 @@ import { Milestones_student } from "./pages_user/Milestones_student";
 import { Feedback_student } from "./pages_user/Feedback_student";
 
 // Teacher (อาจารย์) pages
-import {Dashboard_teacher }from "./pages_teacher/Dashboard_teacher";
+import { Dashboard_teacher } from "./pages_teacher/Dashboard_teacher";
 import { Projects_teacher } from "./pages_teacher/Projects_teacher";
-import { Milestones_teacher } from "./pages_teacher/Milestones_teacher";
 import { Feedback_teacher } from "./pages_teacher/Feedback_teacher";
 import { Reports_teacher } from "./pages_teacher/Reports_teacher";
 import React from "react";
@@ -84,16 +83,15 @@ export const router = createBrowserRouter([
         children: [
           { index: true, Component: Dashboard_teacher },
           { path: "projects", Component: Projects_teacher },
-          { path: "milestones", Component: Milestones_teacher },
           { path: "feedback", Component: Feedback_teacher },
           { path: "reports", Component: Reports_teacher },
+          { path: "milestones", element: <Navigate to="/teacher/projects" replace /> },
         ],
       },
     ],
   },
 
   // ─── Fallback ─────────────────────────────────────────────
-  // ✅ path ที่ไม่มีอยู่ในระบบ → ไป /login
   {
     path: "*",
     element: <Navigate to="/login" replace />,
